@@ -45,6 +45,8 @@ cd docker-community-cad
     -   `DISCORD_CLIENT_SECRET`: Obtain this from your Discord application settings and paste it after 
     
     -   `DISCORD_CLIENT_SECRET=`.  Obtain this from your Discord application settings and paste it after 
+    
+    -   `DISCORD_REDIRECT_URI=`.  Change the URL. Example `DISCORD_REDIRECT_URI="https://communitycad.app/login/discord/handle"`
 
     -   `DISCORD_BOT_TOKEN`: Set this to your Discord bot token.
         
