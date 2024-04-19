@@ -1,9 +1,9 @@
 name: Check for New Tags and Build New Releases
 
 on:
-  #schedule:
-    #- cron: "0 */6 * * *"
- workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
 
 jobs:
   check_tags:
