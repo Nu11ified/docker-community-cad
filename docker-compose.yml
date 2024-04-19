@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  community-cad:
+    image: ghcr.io/communitycad/docker-community-cad:latest
+    container_name: community-cad
+    restart: unless-stopped
+    volumes:
+      - .env:/app/.env
+      - app-data:/app
+    ports:
+      - 8000:80
+    depends_on:
+      - community-cad-db
+    networks:
+      - communitycad-network
+    env_file:
+      - .env
+
+  community-cad-db:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: community-cad-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_DATABASE}
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - mariadb-data:/config
+    restart: unless-stopped
+    networks:
+      - communitycad-network
+
+networks:
+  communitycad-network:
+    driver: bridge
+
+volumes:
+  mariadb-data:
+  app-data:

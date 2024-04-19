@@ -1,0 +1,162 @@
+name: Check for New Tags and Build New Releases
+
+on:
+  #schedule:
+    #- cron: "0 */6 * * *"
+ workflow_dispatch:
+
+jobs:
+  check_tags:
+    runs-on: ubuntu-latest
+    env:
+      UPSTREAM_REPO: communitycad/communitycad
+      MY_REPO: communitycad/docker-communitycad
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      
+      - name: Set Git User Info
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+      - name: Add Upstream Remote
+        run: git remote add upstream https://github.com/${{ env.UPSTREAM_REPO }}.git || echo "Upstream already added."
+
+      - name: Fetch upstream tags
+        run: git fetch upstream 'refs/tags/*:refs/tags/upstream/*'
+
+      - name: Fetch origin tags
+        run: git fetch origin 'refs/tags/*:refs/tags/origin/*'
+  
+      - name: Check for New Tags
+        id: check_tag
+        run: |
+          LATEST_UPSTREAM_TAG=$(git ls-remote --tags upstream | awk '{print $2}' | grep -v '{}' | sort -t '/' -k 3 -V | tail -n1 | sed 's/refs\/tags\///')
+          LATEST_MY_TAG=$(git tag -l 'origin/*' | sed 's/origin\///' | sort -t '/' -k 3 -V | tail -n1)
+          if [ "$LATEST_UPSTREAM_TAG" != "$LATEST_MY_TAG" ]; then
+            echo "::set-output name=new_tag::true"
+            echo "::set-output name=tag::${LATEST_UPSTREAM_TAG}"
+          else
+            echo "::set-output name=new_tag::false"
+          fi
+  
+      - name: Debug - List All Tags
+        run: git tag -l
+  
+      - name: Check if tag exists
+        run: |
+          EXISTS=$(git tag -l "origin/${{ steps.check_tag.outputs.tag }}" || echo "not found")
+          echo "EXISTS value is: $EXISTS"
+          if [[ "$EXISTS" == "origin/${{ steps.check_tag.outputs.tag }}" ]]; then
+            echo "Tag ${{ steps.check_tag.outputs.tag }} exists in fork"
+            echo "exists=true" >> $GITHUB_ENV
+          else
+            echo "Tag ${{ steps.check_tag.outputs.tag }} does not exist in fork"
+            echo "exists=false" >> $GITHUB_ENV
+          fi
+
+      - name: Update Dockerfile and Push Changes
+        if: steps.check_tag.outputs.new_tag == 'true' && env.exists == 'false'
+        run: |
+          NEW_TAG=${{ steps.check_tag.outputs.tag }}
+          CLEAN_TAG="${NEW_TAG#v}"
+          git checkout main
+          sed -i "s/ENV CADVERSION=.*/ENV CADVERSION=$CLEAN_TAG/" ./Dockerfile
+          git add ./Dockerfile
+          git commit -m "Update CADVERSION to $CLEAN_TAG"
+          git push origin main
+          git checkout -b updates/$CLEAN_TAG
+          git push origin updates/$CLEAN_TAG
+
+
+      - name: Install GitHub CLI
+        if: steps.check_tag.outputs.new_tag == 'true' && env.exists == 'false'
+        run: sudo apt update && sudo apt install -y gh
+
+      - name: Create Release if New Tag
+        if: steps.check_tag.outputs.new_tag == 'true' && env.exists == 'false'
+        id: create_release
+        run: |
+          TAG=${{ steps.check_tag.outputs.tag }}
+          CLEAN_TAG="${TAG#v}"
+          COMMIT=$(git rev-parse HEAD)
+          DESCRIPTION=$(git log -1 --pretty=%B)
+          echo "::set-output name=tag::$CLEAN_TAG"
+          echo "::set-output name=commit::$COMMIT"
+          echo "::set-output name=description::$DESCRIPTION"
+      
+      - name: Push Release to Repo
+        if: steps.check_tag.outputs.new_tag == 'true' && env.exists == 'false' && steps.create_release.outputs.tag != ''
+        run: |
+          TAG=${{ steps.create_release.outputs.tag }}
+          COMMIT=${{ steps.create_release.outputs.commit }}
+          DESCRIPTION="${{ steps.create_release.outputs.description }}"
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ env.MY_REPO }}/releases \
+            -d '{
+              "tag_name": "'"$TAG"'",
+              "target_commitish": "'"$COMMIT"'",
+              "name": "'"$TAG"'",
+              "body": "'"$DESCRIPTION"'",
+              "draft": false,
+              "prerelease": false
+            }'
+        
+
+    outputs:
+      tag: ${{ steps.create_release.outputs.tag }}
+
+  build:
+    needs: check_tags
+    runs-on: ubuntu-latest
+    if: needs.check_tags.outputs.tag != '' && needs.check_tags.outputs.tag != null
+    permissions:
+      packages: write
+      contents: read
+    env:
+      DOCKER_HOST: unix:///var/run/docker.sock
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Pull latest changes
+        run: git pull
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Set Docker metadata
+        id: builder-meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/communitycad/docker-community-cad
+          tags: |
+            type=raw,value=${{ needs.check_tags.outputs.tag }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            latest
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.builder-meta.outputs.tags }}
+          labels: ${{ steps.builder-meta.outputs.labels }}
+          no-cache: true
+
