@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       UPSTREAM_REPO: communitycad/communitycad
-      MY_REPO: communitycad/docker-communitycad
+      MY_REPO: communitycad/docker-community-cad
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout Code
