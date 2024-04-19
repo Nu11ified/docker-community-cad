@@ -9,7 +9,8 @@ Still a WIP
 
 1.  **Clone the Repository**: Open your terminal and run the following command to clone the repository:
 
-```git clone https://github.com/CommunityCAD/docker-community-cad.git
+```
+git clone https://github.com/CommunityCAD/docker-community-cad.git
 ```
     
 2.  **Navigate into the Repository**: Change your current directory to the cloned repository:
@@ -49,7 +50,7 @@ cd docker-community-cad
         
 3.  **Save and Exit**: After making the changes, press `Ctrl + X`, then press `Y` to confirm, and then press `Enter` to save the changes.
 
-# Discord Oauth URL
+### Discord Oauth URL
 
 1.  **Access Discord Developer Portal**:
     
