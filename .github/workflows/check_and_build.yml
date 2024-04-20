@@ -2,7 +2,7 @@ name: Check for New Tags and Build New Releases
 
 on:
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "0 */2 * * *"
   workflow_dispatch:
 
 jobs:
@@ -65,11 +65,15 @@ jobs:
           git checkout main
           sed -i "s/ENV CADVERSION=.*/ENV CADVERSION=$CLEAN_TAG/" ./Dockerfile
           git add ./Dockerfile
-          git commit -m "Update CADVERSION to $CLEAN_TAG"
-          git push origin main
+          # Check if there are changes to commit
+          if ! git diff --quiet --exit-code; then
+            git commit -m "Update CADVERSION to $CLEAN_TAG"
+            git push origin main
+          else
+            echo "No changes to commit."
+          fi
           git checkout -b updates/$CLEAN_TAG
           git push origin updates/$CLEAN_TAG
-
 
       - name: Install GitHub CLI
         if: steps.check_tag.outputs.new_tag == 'true' && env.exists == 'false'
