@@ -6,6 +6,21 @@ command_exists() {
 
 echo "Starting the installation script..."
 
+install_git() {
+    if command_exists git; then
+        echo "Git is already installed."
+    else
+        echo "Git is not installed. Installing Git..."
+        if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
+            sudo apt-get update
+            sudo apt-get install -y git
+        elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
+            sudo yum update
+            sudo yum install -y git
+        fi
+    fi
+}
+
 install_docker() {
     if command_exists docker; then
         echo "Docker is already installed."
@@ -48,6 +63,7 @@ else
     OS=$(uname -s)
 fi
 
+install_git
 install_docker
 install_docker_compose
 update_and_install_packages
@@ -93,4 +109,4 @@ read -p "Enter your CAD_TIMEZONE: " cad_timezone
 echo "Setup is complete. Starting Docker containers..."
 docker-compose up -d
 
-echo "Installation and setup are complete. Please Read on how to setup a reverse proxy!"
+echo "Installation and setup are complete. Please read on how to set up a reverse proxy!"
