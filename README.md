@@ -199,7 +199,7 @@ This guide demonstrates the process of configuring Cloudflare Tunnels for your C
 Following these configurations, your Community CAD instance will be accessible through the designated domain name, offering SSL encryption for secure access.
 
 
-## WIP Install 
+## WIP Install Script
 
 We Offer a Install Scrpt for Linux Servers!
 
