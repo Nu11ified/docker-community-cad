@@ -1,18 +1,18 @@
 #!/bin/bash
 
 command_exists() {
-    type "$1" &> /dev/null ;
+    type "$1" &> /dev/null
 }
 
 echo "Starting the installation script..."
 
 install_docker() {
-    if command_exists docker ; then
+    if command_exists docker; then
         echo "Docker is already installed."
     else
         echo "Docker is not installed. Installing Docker..."
         curl -fsSL https://get.docker.com -o get-docker.sh
-        sh get-docker.sh
+        sudo sh get-docker.sh
         # Add the current user to the docker group
         sudo usermod -aG docker $USER
         newgrp docker
@@ -20,7 +20,7 @@ install_docker() {
 }
 
 install_docker_compose() {
-    if command_exists docker-compose ; then
+    if command_exists docker-compose; then
         echo "Docker Compose is already installed."
     else
         echo "Docker Compose is not installed. Installing Docker Compose..."
@@ -29,32 +29,38 @@ install_docker_compose() {
     fi
 }
 
-OS=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
+# Function to update package repositories and install required packages based on OS
+update_and_install_packages() {
+    if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
+        sudo apt-get update
+        sudo apt-get install -y curl git
+    elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
+        sudo yum update
+        sudo yum install -y curl git
+    fi
+}
 
-if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-    sudo apt-get update
-    sudo apt-get install -y curl git
-elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-    sudo yum update
-    sudo yum install -y curl git
+# Detecting OS
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$NAME
+elif type lsb_release >/dev/null 2>&1; then
+    OS=$(lsb_release -si)
+else
+    OS=$(uname -s)
 fi
 
 install_docker
 install_docker_compose
-
-if [ ! -d "./docker-community-cad" ]; then
-    echo "Cloning the repository..."
-    git clone https://github.com/DrMxrcy/docker-community-cad.git
-fi
-
-cd docker-community-cad
+update_and_install_packages
 
 if [ ! -f ".env" ]; then
+    echo "Creating a new .env file..."
     cp .env.example .env
     echo "A new .env file has been created from .env.example."
 fi
 
-echo "Please enter the required environment variables:"
+# Prompting for environment variables
 read -p "Enter your APP_NAME: " app_name
 read -p "Enter your APP_URL: " app_url
 read -p "URL For Steam without https:// communitycad.app: " steam_allowed_hosts
@@ -67,18 +73,22 @@ read -p "Enter your DISCORD_BOT_TOKEN: " discord_bot_token
 read -p "Enter your OWNER_IDS (comma-separated): " owner_ids
 read -p "Enter your CAD_TIMEZONE: " cad_timezone
 
-# Write to .env file
+# Generating App Key from the provided URL
+app_key=$(curl -s https://laravel-encryption-key-generator.vercel.app/api/key)
+
+# Write or update .env file
 {
-    echo "APP_NAME=$app_name"
-    echo "APP_URL=$app_url"
-    echo "STEAM_ALLOWED_HOSTS=$steam_allowed_hosts"
-    echo "STEAM_CLIENT_SECRET=$steam_client_secret"
-    echo "DISCORD_CLIENT_ID=$discord_client_id"
-    echo "DISCORD_CLIENT_SECRET=$discord_client_secret"
-    echo "DISCORD_BOT_TOKEN=$discord_bot_token"
-    echo "OWNER_IDS=$owner_ids"
-    echo "CAD_TIMEZONE=$cad_timezone"
-} >> .env
+    sed -i "s/^APP_KEY=.*/APP_KEY=$app_key/" .env
+    sed -i "s/^APP_NAME=.*/APP_NAME=$app_name/" .env
+    sed -i "s/^APP_URL=.*/APP_URL=$app_url/" .env
+    sed -i "s/^STEAM_ALLOWED_HOSTS=.*/STEAM_ALLOWED_HOSTS=$steam_allowed_hosts/" .env
+    sed -i "s/^STEAM_CLIENT_SECRET=.*/STEAM_CLIENT_SECRET=$steam_client_secret/" .env
+    sed -i "s/^DISCORD_CLIENT_ID=.*/DISCORD_CLIENT_ID=$discord_client_id/" .env
+    sed -i "s/^DISCORD_CLIENT_SECRET=.*/DISCORD_CLIENT_SECRET=$discord_client_secret/" .env
+    sed -i "s/^DISCORD_BOT_TOKEN=.*/DISCORD_BOT_TOKEN=$discord_bot_token/" .env
+    sed -i "s/^OWNER_IDS=.*/OWNER_IDS=$owner_ids/" .env
+    sed -i "s/^CAD_TIMEZONE=.*/CAD_TIMEZONE=$cad_timezone/" .env
+} > /dev/null 2>&1
 
 echo "Setup is complete. Starting Docker containers..."
 docker-compose up -d
