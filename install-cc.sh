@@ -29,7 +29,6 @@ install_docker_compose() {
     fi
 }
 
-# Function to update package repositories and install required packages based on OS
 update_and_install_packages() {
     if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
         sudo apt-get update
@@ -40,7 +39,6 @@ update_and_install_packages() {
     fi
 }
 
-# Detecting OS
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$NAME
@@ -54,13 +52,19 @@ install_docker
 install_docker_compose
 update_and_install_packages
 
+echo "Cloning the repository..."
+git clone https://github.com/CommunityCAD/docker-community-cad.git
+cd docker-community-cad || exit 1
+
 if [ ! -f ".env" ]; then
     echo "Creating a new .env file..."
     cp .env.example .env
     echo "A new .env file has been created from .env.example."
 fi
 
-# Prompting for environment variables
+# Prompting for App Key
+echo "Generate an app key from https://laravel-encryption-key-generator.vercel.app/ and paste it below:"
+read -p "Enter your APP_KEY: " app_key
 read -p "Enter your APP_NAME: " app_name
 read -p "Enter your APP_URL: " app_url
 read -p "URL For Steam without https:// communitycad.app: " steam_allowed_hosts
@@ -73,24 +77,20 @@ read -p "Enter your DISCORD_BOT_TOKEN: " discord_bot_token
 read -p "Enter your OWNER_IDS (comma-separated): " owner_ids
 read -p "Enter your CAD_TIMEZONE: " cad_timezone
 
-# Generating App Key from the provided URL
-app_key=$(curl -s https://laravel-encryption-key-generator.vercel.app/api/key)
-
-# Write or update .env file
 {
-    sed -i "s/^APP_KEY=.*/APP_KEY=$app_key/" .env
-    sed -i "s/^APP_NAME=.*/APP_NAME=$app_name/" .env
-    sed -i "s/^APP_URL=.*/APP_URL=$app_url/" .env
-    sed -i "s/^STEAM_ALLOWED_HOSTS=.*/STEAM_ALLOWED_HOSTS=$steam_allowed_hosts/" .env
-    sed -i "s/^STEAM_CLIENT_SECRET=.*/STEAM_CLIENT_SECRET=$steam_client_secret/" .env
-    sed -i "s/^DISCORD_CLIENT_ID=.*/DISCORD_CLIENT_ID=$discord_client_id/" .env
-    sed -i "s/^DISCORD_CLIENT_SECRET=.*/DISCORD_CLIENT_SECRET=$discord_client_secret/" .env
-    sed -i "s/^DISCORD_BOT_TOKEN=.*/DISCORD_BOT_TOKEN=$discord_bot_token/" .env
-    sed -i "s/^OWNER_IDS=.*/OWNER_IDS=$owner_ids/" .env
-    sed -i "s/^CAD_TIMEZONE=.*/CAD_TIMEZONE=$cad_timezone/" .env
+    sed -i "s|^APP_KEY=.*|APP_KEY=$app_key|" .env
+    sed -i "s|^APP_NAME=.*|APP_NAME=$app_name|" .env
+    sed -i "s|^APP_URL=.*|APP_URL=$app_url|" .env
+    sed -i "s|^STEAM_ALLOWED_HOSTS=.*|STEAM_ALLOWED_HOSTS=$steam_allowed_hosts|" .env
+    sed -i "s|^STEAM_CLIENT_SECRET=.*|STEAM_CLIENT_SECRET=$steam_client_secret|" .env
+    sed -i "s|^DISCORD_CLIENT_ID=.*|DISCORD_CLIENT_ID=$discord_client_id|" .env
+    sed -i "s|^DISCORD_CLIENT_SECRET=.*|DISCORD_CLIENT_SECRET=$discord_client_secret|" .env
+    sed -i "s|^DISCORD_BOT_TOKEN=.*|DISCORD_BOT_TOKEN=$discord_bot_token|" .env
+    sed -i "s|^OWNER_IDS=.*|OWNER_IDS=$owner_ids|" .env
+    sed -i "s|^CAD_TIMEZONE=.*|CAD_TIMEZONE=$cad_timezone|" .env
 } > /dev/null 2>&1
 
 echo "Setup is complete. Starting Docker containers..."
 docker-compose up -d
 
-echo "Installation and setup are complete. Your application should now be running."
+echo "Installation and setup are complete. Please Read on how to setup a reverse proxy!"
