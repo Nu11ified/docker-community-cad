@@ -199,3 +199,18 @@ This guide demonstrates the process of configuring Cloudflare Tunnels for your C
 Following these configurations, your Community CAD instance will be accessible through the designated domain name, offering SSL encryption for secure access.
 
 
+## WIP Install 
+
+We Offer a Install Scrpt for Linux Servers!
+
+*Notice it is a WIP*
+
+- Steps
+1. SSH into your Linux server
+2. Run the command below
+```
+curl -o install-cc.sh https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/install-cc.sh && chmod +x install-cc.sh && ./install-cc.sh
+```
+3. Make sure to follow all the configuration guidelines. Refer above to [Editing the .env File](https://github.com/CommunityCAD/docker-community-cad/blob/main/README.md#editing-the-env-file) for more info!
+
+
