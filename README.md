@@ -89,7 +89,7 @@ cd docker-community-cad
 1.  **Build and Run Docker Containers**: Run the following command to build and start the Docker containers:
 
 ```
-docker-compose up -d
+docker compose up -d
 ```
     
 
