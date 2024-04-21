@@ -66,15 +66,15 @@ fi
 echo "Generate an app key from https://laravel-encryption-key-generator.vercel.app/ and paste it below:"
 read -p "Enter your APP_KEY: " app_key
 read -p "Enter your APP_NAME: " app_name
-read -p "Enter your APP_URL: " app_url
-read -p "URL For Steam without https:// communitycad.app: " steam_allowed_hosts
+read -p "Enter your APP_URL (https://communitycad.app): " app_url
+read -p "URL For Steam without https:// (communitycad.app): " steam_allowed_hosts
 echo "For STEAM_CLIENT_SECRET, visit https://steamcommunity.com/dev/registerkey to register and obtain a key"
 read -p "Enter your STEAM_CLIENT_SECRET: " steam_client_secret
 echo "For DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, and DISCORD_BOT_TOKEN, visit https://discord.com/developers/applications to create an application"
 read -p "Enter your DISCORD_CLIENT_ID: " discord_client_id
 read -p "Enter your DISCORD_CLIENT_SECRET: " discord_client_secret
 read -p "Enter your DISCORD_BOT_TOKEN: " discord_bot_token
-read -p "Enter your OWNER_IDS (comma-separated): " owner_ids
+read -p 'Enter your OWNER_IDS ("ID1|ID2"): ' owner_ids
 read -p "Enter your CAD_TIMEZONE: " cad_timezone
 
 {
