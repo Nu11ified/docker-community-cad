@@ -102,11 +102,13 @@ docker-compose up -d
 3.  **Save and Exit**: Press `Ctrl + X`, then press `Y`, and finally press `Enter` to save and exit.
     
 
-## Reverse Proxies
+# Reverse Proxies
 
 After you deploy the app, you will need to setup a reverse proxy.
 
-Here is a Nginx Example Below
+Please Check Below For Examples
+
+## Nginx
 
 ```
 server {
@@ -153,4 +155,47 @@ server {
     }
 }
 ```
+
+## Cloudflare Tunnels
+
+# Setting up Cloudflare Tunnels for Community CAD
+
+This guide demonstrates the process of configuring Cloudflare Tunnels for your Community CAD instance. By leveraging Cloudflare Tunnels, you can associate a domain name with SSL certification to your Community CAD deployment.
+
+## Prerequisites
+
+- A domain name managed through Cloudflare DNS
+- Community CAD Deploymemnt
+- [A Cloudflare account](https://dash.cloudflare.com/sign-up)
+
+## Getting Started
+
+### 1. Access Cloudflare Dashboard
+
+1. Navigate to the [Cloudflare Zero Trust Dashboard](https://one.dash.cloudflare.com) and log in using your Cloudflare account credentials.
+2. Within your dashboard, navigate to your account, select Zero Trust (one.dash.cloudflare.com), proceed to Networks, and then Tunnels.
+
+### 2. Establish a Cloudflare Tunnel for Community CAD
+
+1. Click on the "Create a Tunnel" option.
+2. Provide a name for your tunnel (e.g., "Community CAD Tunnel").
+3. Follow the on-screen instructions to install Cloudflared on your server (Install Connector).
+4. Upon successful connection, proceed by clicking "Next".
+
+### 3. Configure Domain Name for Community CAD
+
+1. Specify the settings for your domain:
+
+   - **Subdomain:** Choose a subdomain for your Community CAD instance. For instance, if you prefer `cad.example.com`, input `cad`.
+   - **Domain:** Enter your Cloudflare-connected domain. For example, if your domain is `cad.example.com`, enter `example.com`.
+   - **Path:** Leave this field empty.
+
+   - **Service Type:** Select `HTTP`.
+   - **URL:** Set to `localhost:8000`.
+
+2. Save your tunnel settings.
+3. Return to the Tunnels dashboard.
+
+Following these configurations, your Community CAD instance will be accessible through the designated domain name, offering SSL encryption for secure access.
+
 
