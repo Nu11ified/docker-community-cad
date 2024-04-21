@@ -2,7 +2,7 @@ name: Check for New Tags and Build New Releases
 
 on:
   schedule:
-    - cron: "0 */2 * * *"
+    - cron: "0 */6 * * *"
   workflow_dispatch:
 
 jobs:
@@ -56,7 +56,7 @@ jobs:
             echo "Tag ${{ steps.check_tag.outputs.tag }} does not exist in fork"
             echo "exists=false" >> $GITHUB_ENV
           fi
-  
+
       - name: Update Dockerfile and Push Changes
         if: steps.check_tag.outputs.new_tag == 'true' && env.exists == 'false'
         run: |
@@ -65,18 +65,11 @@ jobs:
           git checkout main
           sed -i "s/ENV CADVERSION=.*/ENV CADVERSION=$CLEAN_TAG/" ./Dockerfile
           git add ./Dockerfile
-          # Check if there are changes to commit
-          if ! git diff --quiet --exit-code; then
-            git commit -m "Update CADVERSION to $CLEAN_TAG"
-            git push origin main
-          else
-            echo "No changes to commit."
-          fi
-          # Only create a new branch if the detected tag matches the latest tag from upstream
-          if [[ "${{ steps.check_tag.outputs.tag }}" == "${{ env.LATEST_UPSTREAM_TAG }}" ]]; then
-            git checkout -b updates/$CLEAN_TAG
-            git push origin updates/$CLEAN_TAG
-          fi
+          git commit -m "Update CADVERSION to $CLEAN_TAG"
+          git push origin main
+          git checkout -b updates/$CLEAN_TAG
+          git push origin updates/$CLEAN_TAG
+
 
       - name: Install GitHub CLI
         if: steps.check_tag.outputs.new_tag == 'true' && env.exists == 'false'
