@@ -2,6 +2,20 @@
 Still a WIP
 
 
+## Requirements
+
+All the items listed below are required to get the CAD up and running smoothly.
+
+- [Git](https://git-scm.com/downloads)
+- Docker
+- Reverse Proxy (Nginx, Cloudflare Tunnels, etc)
+
+*Docker Install Guides*
+
+- [Docker Desktop (Windows)](https://docker.com/get-started)
+- [Docker Ubuntu 20.04 Guide](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-20-04)
+- [Docker Ubuntu 22.04 Guide](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-compose-on-ubuntu-22-04)
+
 
 # Install Information 
 
