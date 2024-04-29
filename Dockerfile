@@ -1,6 +1,6 @@
 FROM webdevops/php-nginx:8.2-alpine
 
-ENV CADVERSION=1.3.2
+ENV CADVERSION=1.3.3.1
 
 RUN apk add --no-cache oniguruma-dev postgresql-dev libxml2-dev \
     && docker-php-ext-install ctype fileinfo mbstring xml pdo pdo_mysql
