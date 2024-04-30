@@ -192,8 +192,8 @@ This guide demonstrates the process of configuring Cloudflare Tunnels for your C
 
    - **Service Type:** Select `HTTPS`.
    - **URL:** Set to `localhost:8000`.
-   - Click on Additional application settings -> TLS
-       - **No TLS Verify:** Enabled`.
+   - Click on `Additional application settings` -> `TLS`
+       - **No TLS Verify:** Enabled.
 
 2. Save your tunnel settings.
 3. Return to the Tunnels dashboard.
