@@ -1,0 +1,53 @@
+name: Release to GitHub Packages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: 
+      - development  
+
+env:
+  TAG_LATEST: true
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: development
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Extract Builder meta
+        id: builder-meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ghcr.io/communitycad/docker-community-cad
+          tags: |
+            type=ref,event=branch,prefix=development,priority=200,enable=true
+
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.builder-meta.outputs.tags }}
+          labels: ${{ steps.builder-meta.outputs.labels }}
