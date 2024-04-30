@@ -9,7 +9,7 @@ services:
       - .env:/app/.env
       - app-data:/app
     ports:
-      - 8000:80
+      - 8000:443
     depends_on:
       - community-cad-db
     networks:
