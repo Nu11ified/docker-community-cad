@@ -35,6 +35,6 @@ RUN chown -R application:application /app
 
 RUN ls -al /app
 
-EXPOSE 80
+EXPOSE 443
 VOLUME ["/app", "/vendor"]
 
