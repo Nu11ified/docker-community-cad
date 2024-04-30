@@ -190,8 +190,10 @@ This guide demonstrates the process of configuring Cloudflare Tunnels for your C
    - **Domain:** Enter your Cloudflare-connected domain. For example, if your domain is `cad.example.com`, enter `example.com`.
    - **Path:** Leave this field empty.
 
-   - **Service Type:** Select `HTTP`.
+   - **Service Type:** Select `HTTPS`.
    - **URL:** Set to `localhost:8000`.
+   - Click on Additional application settings -> TLS
+       - **No TLS Verify:** Enabled`.
 
 2. Save your tunnel settings.
 3. Return to the Tunnels dashboard.
