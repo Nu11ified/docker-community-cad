@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: 
-      - development  
+      - development
 
 env:
   TAG_LATEST: true
@@ -33,7 +33,7 @@ jobs:
         with:
           images: ghcr.io/communitycad/docker-community-cad
           tags: |
-            type=ref,event=branch,prefix=development,priority=200,enable=true
+            type=raw,value=development
 
       - name: Login to GHCR
         if: github.event_name != 'pull_request'
