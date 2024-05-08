@@ -220,7 +220,7 @@ docker compose pull
 ```
 5. Run The Docker Compose Up Command to Start the CAD!
 ```
-docker compose pull
+docker compose up -d
 ```
 
 ## WIP Install Script
