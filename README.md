@@ -200,6 +200,28 @@ This guide demonstrates the process of configuring Cloudflare Tunnels for your C
 
 Following these configurations, your Community CAD instance will be accessible through the designated domain name, offering SSL encryption for secure access.
 
+# Update Guide
+    
+1.  **Navigate into your CommunityCad Folder**: Change your current directory to the CommunityCad Folder:
+
+```
+cd docker-community-cad
+```
+
+2. Check the [Releases Notes](https://github.com/CommunityCAD/CommunityCAD/releases) for any breaking changes!
+
+3. Run The Docker Compose Down Command to stop the container
+```
+docker compose down
+```
+4. Run The Docker Compose Pull Command to pull any updates.
+```
+docker compose pull
+```
+5. Run The Docker Compose Up Command to Start the CAD!
+```
+docker compose pull
+```
 
 ## WIP Install Script
 
