@@ -137,9 +137,8 @@ server {
     ssl_stapling_verify on;
 
     # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
     add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
     # Gzip compression
@@ -190,14 +189,38 @@ This guide demonstrates the process of configuring Cloudflare Tunnels for your C
    - **Domain:** Enter your Cloudflare-connected domain. For example, if your domain is `cad.example.com`, enter `example.com`.
    - **Path:** Leave this field empty.
 
-   - **Service Type:** Select `HTTP`.
+   - **Service Type:** Select `HTTPS`.
    - **URL:** Set to `localhost:8000`.
+   - Click on `Additional application settings` -> `TLS`
+       - **No TLS Verify:** Enabled.
 
 2. Save your tunnel settings.
 3. Return to the Tunnels dashboard.
 
 Following these configurations, your Community CAD instance will be accessible through the designated domain name, offering SSL encryption for secure access.
 
+# Update Guide
+    
+1.  **Navigate into your CommunityCad Folder**: Change your current directory to the CommunityCad Folder:
+
+```
+cd docker-community-cad
+```
+
+2. Check the [Releases Notes](https://github.com/CommunityCAD/CommunityCAD/releases) for any breaking changes!
+
+3. Run The Docker Compose Down Command to stop the container
+```
+docker compose down
+```
+4. Run The Docker Compose Pull Command to pull any updates.
+```
+docker compose pull
+```
+5. Run The Docker Compose Up Command to Start the CAD!
+```
+docker compose up -d
+```
 
 ## WIP Install Script
 
