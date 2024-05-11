@@ -3,14 +3,14 @@
 echo "Installing Composer dependencies..."
 composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
-if [ ! -f installed ]; then
+if [ ! -f /app_installed/installed ]; then
     echo "Performing first-time setup..."
     
     php artisan migrate:fresh --seed
 
     php artisan storage:link
 
-    touch installed
+    touch /app_installed/installed
 
     echo "Setup completed."
 else

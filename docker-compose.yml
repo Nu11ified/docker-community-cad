@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     volumes:
       - .env:/app/.env
-      - app-data:/app
+      - app-installed:/app_installed
     ports:
       - 8000:443
     depends_on:
@@ -37,4 +37,4 @@ networks:
 
 volumes:
   mariadb-data:
-  app-data:
+  app-installed:
