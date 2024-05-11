@@ -35,6 +35,10 @@ RUN chown -R application:application /app
 
 RUN ls -al /app
 
+RUN mkdir -p /app_installed
+
+RUN touch /app_installed/.gitkeep 
+
 EXPOSE 443
-VOLUME ["/app", "/vendor"]
+VOLUME ["/app_installed", "/vendor"]
 
