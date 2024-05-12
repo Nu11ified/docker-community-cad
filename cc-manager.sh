@@ -71,6 +71,13 @@ function configure_environment() {
         return 1  
     fi
 
+    generate_password() {
+        cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1
+    }
+
+    db_password=$(generate_password)
+
+    echo "Generated DB password: $db_password"
 
     echo "Generate an app key from https://laravel-encryption-key-generator.vercel.app/ and paste it below:"
     read -p "Enter your APP_KEY: " app_key
@@ -97,7 +104,9 @@ function configure_environment() {
     sed -i "s|^DISCORD_BOT_TOKEN=.*|DISCORD_BOT_TOKEN=$discord_bot_token|" "$ENV_FILE"
     sed -i "s|^OWNER_IDS=.*|OWNER_IDS=$owner_ids|" "$ENV_FILE"
     sed -i "s|^CAD_TIMEZONE=.*|CAD_TIMEZONE=$cad_timezone|" "$ENV_FILE"
+    sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$db_password|" "$ENV_FILE"
 }
+
 
 function install() {
     echo "Starting the installation of Community CAD on x86_64 architecture..."
