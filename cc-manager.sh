@@ -181,15 +181,15 @@ function configure_environment() {
     read -p 'Enter your OWNER_IDS ("ID1|ID2"): ' owner_ids
     read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
 
-    app_name=$(escape_sed "$app_name")
-    app_url=$(escape_sed "$app_url")
-    steam_allowed_hosts=$(escape_sed "$steam_allowed_hosts")
-    steam_client_secret=$(escape_sed "$steam_client_secret")
-    discord_client_id=$(escape_sed "$discord_client_id")
-    discord_client_secret=$(escape_sed "$discord_client_secret")
-    discord_bot_token=$(escape_sed "$discord_bot_token")
-    owner_ids=$(escape_sed "$owner_ids")
-    cad_timezone=$(escape_sed "$cad_timezone")
+    app_name=$(escape_for_sed "$app_name")
+    app_url=$(escape_for_sed "$app_url")
+    steam_allowed_hosts=$(escape_for_sed "$steam_allowed_hosts")
+    steam_client_secret=$(escape_for_sed "$steam_client_secret")
+    discord_client_id=$(escape_for_sed "$discord_client_id")
+    discord_client_secret=$(escape_for_sed "$discord_client_secret")
+    discord_bot_token=$(escape_for_sed "$discord_bot_token")
+    owner_ids=$(escape_for_sed "$owner_ids")
+    cad_timezone=$(escape_for_sed "$cad_timezone")
 
     sed -i "s|^APP_NAME=.*|APP_NAME=$app_name|" "$ENV_FILE"
     sed -i "s|^APP_URL=.*|APP_URL=$app_url|" "$ENV_FILE"
@@ -471,30 +471,36 @@ function install_caddy_reverse_proxy() {
         return
     fi
 
-    echo "Please enter your email address for Let's Encrypt (for renewal and notification purposes):"
-    read -p "Email address: " email
-
-    # Configuring Caddy for the specified domain with Let's Encrypt email
     echo "Configuring Caddy for $domain..."
     
     sudo mkdir -p /etc/caddy
 
     sudo tee /etc/caddy/Caddyfile >/dev/null <<EOF
 $domain {
-    reverse_proxy https://127.0.0.1:8000
+    reverse_proxy https://127.0.0.1:8000 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
     encode gzip
     header {
         X-Content-Type-Options "nosniff"
         X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=31536000;"
     }
-    tls $email
+    tls $email {
+        curves secp384r1
+    }
+    log {
+        output file /var/log/caddy/$domain.log
+    }
 }
 EOF
     echo "Caddy configuration for $domain has been added."
 
     # Reload Caddy to apply the new configuration
-    sudo systemctl restart caddy >/dev/null 2>&1
+    sudo systemctl reload caddy >/dev/null 2>&1
     echo "Caddy has been reloaded to apply new configuration."
 }
 
