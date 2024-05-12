@@ -481,7 +481,7 @@ function install_caddy_reverse_proxy() {
 
     sudo tee /etc/caddy/Caddyfile >/dev/null <<EOF
 $domain {
-    reverse_proxy 127.0.0.1:8000
+    reverse_proxy https://127.0.0.1:8000
     encode gzip
     header {
         X-Content-Type-Options "nosniff"
@@ -589,7 +589,7 @@ server {
     ssl_stapling_verify on;
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass https://127.0.0.1:8000;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
