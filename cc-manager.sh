@@ -22,9 +22,9 @@ function install_git() {
   else
     echo "Git is not installed. Installing Git... (Please be patient. May take a bit!)"
     if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-      sudo apt-get install -y git > /dev/null 2>&1
+      sudo apt-get install -y git >/dev/null 2>&1
     elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-      sudo yum install -y git > /dev/null 2>&1
+      sudo yum install -y git >/dev/null 2>&1
     fi
   fi
 }
@@ -35,9 +35,9 @@ function install_curl() {
   else
     echo "Curl is not installed. Installing Curl... (Please be patient. May take a bit!)"
     if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-      sudo apt-get install -y curl > /dev/null 2>&1
+      sudo apt-get install -y curl >/dev/null 2>&1
     elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-      sudo yum install -y curl > /dev/null 2>&1
+      sudo yum install -y curl >/dev/null 2>&1
     fi
   fi
 }
@@ -105,8 +105,8 @@ function install_docker_compose() {
     command echo "Docker Compose is already installed."
   else
     echo "Docker Compose is not installed. Installing Docker Compose... (Please be patient. May take a bit!)"
-    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose > /dev/null 2>&1
-    sudo chmod +x /usr/local/bin/docker-compose > /dev/null 2>&1
+    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose >/dev/null 2>&1
+    sudo chmod +x /usr/local/bin/docker-compose >/dev/null 2>&1
   fi
 }
 
@@ -440,17 +440,17 @@ function install_caddy_reverse_proxy() {
             case $ID in
                 ubuntu|debian)
                     export DEBIAN_FRONTEND=noninteractive
-                    sudo apt update > /dev/null 2>&1
-                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl > /dev/null 2>&1
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg > /dev/null 2>&1
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list > /dev/null 2>&1
-                    sudo apt update > /dev/null 2>&1
-                    sudo apt install -y caddy > /dev/null 2>&1
+                    sudo apt update >/dev/null 2>&1
+                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >/dev/null 2>&1
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
+                    sudo apt update >/dev/null 2>&1
+                    sudo apt install -y caddy >/dev/null 2>&1
                     ;;
                 centos|rocky)
-                    sudo yum install -y 'dnf-command(copr)' > /dev/null 2>&1
-                    sudo dnf copr enable @caddy/caddy > /dev/null 2>&1
-                    sudo dnf install -y caddy > /dev/null 2>&1
+                    sudo yum install -y 'dnf-command(copr)' >/dev/null 2>&1
+                    sudo dnf copr enable @caddy/caddy >/dev/null 2>&1
+                    sudo dnf install -y caddy >/dev/null 2>&1
                     ;;
                 *)
                     echo "OS not supported for Caddy installation."
