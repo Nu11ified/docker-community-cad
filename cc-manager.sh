@@ -173,6 +173,11 @@ function update_packages() {
     fi
 }
 
+function escape_for_sed() {
+    # This function now escapes all potentially problematic characters for sed
+    echo "$1" | sed -e 's/[\/&:]/\\&/g'
+}
+
 function configure_environment() {
     echo "Configuring environment variables..."
 
@@ -201,9 +206,6 @@ function configure_environment() {
         echo "Invalid URL. Please ensure it starts with https://"
         read -p "Enter your APP_URL (e.g., https://communitycad.app): " app_url
     done
-    
-    steam_allowed_hosts="${app_url#https://}"
-
     read -p "Enter your STEAM_CLIENT_SECRET (from https://steamcommunity.com/dev/registerkey): " steam_client_secret
     read -p "Enter your DISCORD_CLIENT_ID: " discord_client_id
     read -p "Enter your DISCORD_CLIENT_SECRET: " discord_client_secret
@@ -211,18 +213,30 @@ function configure_environment() {
     read -p 'Enter your OWNER_IDS ("ID1|ID2"): ' owner_ids
     read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
 
+    steam_allowed_hosts="${app_url#https://}"
 
-    perl -pi -e "s/^APP_NAME=.*$/APP_NAME=$app_name/g" "$ENV_FILE"
-    perl -pi -e "s/^APP_KEY=.*$/APP_KEY=$app_key/g" "$ENV_FILE"
-    perl -pi -e "s/^APP_URL=.*$/APP_URL=$app_url/g" "$ENV_FILE"
-    perl -pi -e "s/^STEAM_ALLOWED_HOSTS=.*$/STEAM_ALLOWED_HOSTS=$steam_allowed_hosts/g" "$ENV_FILE"
-    perl -pi -e "s/^STEAM_CLIENT_SECRET=.*$/STEAM_CLIENT_SECRET=$steam_client_secret/g" "$ENV_FILE"
-    perl -pi -e "s/^DISCORD_CLIENT_ID=.*$/DISCORD_CLIENT_ID=$discord_client_id/g" "$ENV_FILE"
-    perl -pi -e "s/^DISCORD_CLIENT_SECRET=.*$/DISCORD_CLIENT_SECRET=$discord_client_secret/g" "$ENV_FILE"
-    perl -pi -e "s/^DISCORD_BOT_TOKEN=.*$/DISCORD_BOT_TOKEN=$discord_bot_token/g" "$ENV_FILE"
-    perl -pi -e "s/^OWNER_IDS=.*$/OWNER_IDS=$owner_ids/g" "$ENV_FILE"
-    perl -pi -e "s/^CAD_TIMEZONE=.*$/CAD_TIMEZONE=$cad_timezone/g" "$ENV_FILE"
-    perl -pi -e "s/^DB_PASSWORD=.*$/DB_PASSWORD=$db_password/g" "$ENV_FILE"
+    app_name=$(escape_for_sed "$app_name")
+    app_key=$(escape_for_sed "$app_key")
+    app_url=$(escape_for_sed "$app_url")
+    steam_allowed_hosts=$(escape_for_sed "$steam_allowed_hosts")
+    steam_client_secret=$(escape_for_sed "$steam_client_secret")
+    discord_client_id=$(escape_for_sed "$discord_client_id")
+    discord_client_secret=$(escape_for_sed "$discord_client_secret")
+    discord_bot_token=$(escape_for_sed "$discord_bot_token")
+    owner_ids=$(escape_for_sed "$owner_ids")
+    cad_timezone=$(escape_for_sed "$cad_timezone")
+
+    sed -i "s|^APP_NAME=.*|APP_NAME=$app_name|" "$ENV_FILE"
+    sed -i "s|^APP_KEY=.*|APP_KEY=$app_key|" "$ENV_FILE"
+    sed -i "s|^APP_URL=.*|APP_URL=$app_url|" "$ENV_FILE"
+    sed -i "s|^STEAM_ALLOWED_HOSTS=.*|STEAM_ALLOWED_HOSTS=$steam_allowed_hosts|" "$ENV_FILE"
+    sed -i "s|^STEAM_CLIENT_SECRET=.*|STEAM_CLIENT_SECRET=$steam_client_secret|" "$ENV_FILE"
+    sed -i "s|^DISCORD_CLIENT_ID=.*|DISCORD_CLIENT_ID=$discord_client_id|" "$ENV_FILE"
+    sed -i "s|^DISCORD_CLIENT_SECRET=.*|DISCORD_CLIENT_SECRET=$discord_client_secret|" "$ENV_FILE"
+    sed -i "s|^DISCORD_BOT_TOKEN=.*|DISCORD_BOT_TOKEN=$discord_bot_token|" "$ENV_FILE"
+    sed -i "s|^OWNER_IDS=.*|OWNER_IDS=$owner_ids|" "$ENV_FILE"
+    sed -i "s|^CAD_TIMEZONE=.*|CAD_TIMEZONE=$cad_timezone|" "$ENV_FILE"
+    sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$db_password|" "$ENV_FILE"
 
     echo "Environment variables configured successfully."
 }
