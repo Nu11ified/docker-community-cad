@@ -1,0 +1,2 @@
+1.0.0
+https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager.sh
