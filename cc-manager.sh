@@ -440,8 +440,8 @@ function install_caddy_reverse_proxy() {
             case $ID in
                 ubuntu|debian)
                     sudo apt update >/dev/null 2>&1
-                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https >/dev/null 2>&1
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc >/dev/null 2>&1
+                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >/dev/null 2>&1
                     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
                     sudo apt update >/dev/null 2>&1
                     sudo apt install -y caddy >/dev/null 2>&1
@@ -465,10 +465,17 @@ function install_caddy_reverse_proxy() {
     echo "Please enter your domain name (e.g., example.com or www.example.com):"
     read -p "Domain name: " domain
 
-    sudo mkdir -p /etc/caddy
+    # Check if domain has been provided
+    if [ -z "$domain" ]; then
+        echo "Domain name cannot be empty. Aborting installation."
+        return
+    fi
 
     echo "Configuring Caddy for $domain..."
-    sudo tee /etc/caddy/Caddyfile <<EOF
+    
+    sudo mkdir -p /etc/caddy
+
+    sudo tee /etc/caddy/Caddyfile >/dev/null <<EOF
 $domain {
     reverse_proxy 127.0.0.1:8000
     encode gzip
@@ -480,10 +487,11 @@ $domain {
 }
 EOF
     echo "Caddy configuration for $domain has been added."
+
+    # Reload Caddy to apply the new configuration
     sudo systemctl reload caddy >/dev/null 2>&1
     echo "Caddy has been reloaded to apply new configuration."
 }
-
 
 
 function install_nginx_reverse_proxy() {
