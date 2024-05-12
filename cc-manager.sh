@@ -181,15 +181,15 @@ function configure_environment() {
     read -p 'Enter your OWNER_IDS ("ID1|ID2"): ' owner_ids
     read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
 
-    app_name=$(echo "$app_name" | sed 's/[&/\]/\\&/g')
-    app_url=$(echo "$app_url" | sed 's/[&/\]/\\&/g')
-    steam_allowed_hosts=$(echo "$steam_allowed_hosts" | sed 's/[&/\]/\\&/g')
-    steam_client_secret=$(echo "$steam_client_secret" | sed 's/[&/\]/\\&/g')
-    discord_client_id=$(echo "$discord_client_id" | sed 's/[&/\]/\\&/g')
-    discord_client_secret=$(echo "$discord_client_secret" | sed 's/[&/\]/\\&/g')
-    discord_bot_token=$(echo "$discord_bot_token" | sed 's/[&/\]/\\&/g')
-    owner_ids=$(echo "$owner_ids" | sed 's/[&/\]/\\&/g')
-    cad_timezone=$(echo "$cad_timezone" | sed 's/[&/\]/\\&/g')
+    app_name=$(escape_sed "$app_name")
+    app_url=$(escape_sed "$app_url")
+    steam_allowed_hosts=$(escape_sed "$steam_allowed_hosts")
+    steam_client_secret=$(escape_sed "$steam_client_secret")
+    discord_client_id=$(escape_sed "$discord_client_id")
+    discord_client_secret=$(escape_sed "$discord_client_secret")
+    discord_bot_token=$(escape_sed "$discord_bot_token")
+    owner_ids=$(escape_sed "$owner_ids")
+    cad_timezone=$(escape_sed "$cad_timezone")
 
     sed -i "s|^APP_NAME=.*|APP_NAME=$app_name|" "$ENV_FILE"
     sed -i "s|^APP_URL=.*|APP_URL=$app_url|" "$ENV_FILE"
@@ -204,7 +204,6 @@ function configure_environment() {
 
     echo "Environment variables configured successfully."
 }
-
 
 function install() {
     echo "Starting the installation of Community CAD on x86_64 architecture..."
@@ -439,12 +438,13 @@ function install_caddy_reverse_proxy() {
             source /etc/os-release
             case $ID in
                 ubuntu|debian)
-                    sudo DEBIAN_FRONTEND=noninteractive apt update >/dev/null 2>&1
-                    sudo DEBIAN_FRONTEND=noninteractive apt install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
-                    DEBIAN_FRONTEND=noninteractive curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >/dev/null 2>&1
-                    DEBIAN_FRONTEND=noninteractive curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
-                    sudo DEBIAN_FRONTEND=noninteractive apt update >/dev/null 2>&1
-                    sudo DEBIAN_FRONTEND=noninteractive apt install -y caddy >/dev/null 2>&1
+                    export DEBIAN_FRONTEND=noninteractive
+                    sudo apt update >/dev/null 2>&1
+                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >/dev/null 2>&1
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
+                    sudo apt update >/dev/null 2>&1
+                    sudo apt install -y caddy >/dev/null 2>&1
                     ;;
                 centos|rocky)
                     sudo yum install -y 'dnf-command(copr)' >/dev/null 2>&1
@@ -471,6 +471,10 @@ function install_caddy_reverse_proxy() {
         return
     fi
 
+    echo "Please enter your email address for Let's Encrypt (for renewal and notification purposes):"
+    read -p "Email address: " email
+
+    # Configuring Caddy for the specified domain with Let's Encrypt email
     echo "Configuring Caddy for $domain..."
     
     sudo mkdir -p /etc/caddy
@@ -484,14 +488,16 @@ $domain {
         X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
     }
+    tls $email
 }
 EOF
     echo "Caddy configuration for $domain has been added."
 
     # Reload Caddy to apply the new configuration
-    sudo systemctl reload caddy >/dev/null 2>&1
+    sudo systemctl restart caddy >/dev/null 2>&1
     echo "Caddy has been reloaded to apply new configuration."
 }
+
 
 
 function install_nginx_reverse_proxy() {
