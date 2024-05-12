@@ -155,7 +155,6 @@ function configure_environment() {
     db_password=$(generate_password)
     echo "Generated secure DB password."
 
-
     validate_url() {
         if [[ "$1" =~ ^https://.+ ]]; then return 0; else return 1; fi
     }
@@ -175,6 +174,16 @@ function configure_environment() {
     read -p 'Enter your OWNER_IDS ("ID1|ID2"): ' owner_ids
     read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
 
+    app_name=$(echo "$app_name" | sed 's/[&/\]/\\&/g')
+    app_url=$(echo "$app_url" | sed 's/[&/\]/\\&/g')
+    steam_allowed_hosts=$(echo "$steam_allowed_hosts" | sed 's/[&/\]/\\&/g')
+    steam_client_secret=$(echo "$steam_client_secret" | sed 's/[&/\]/\\&/g')
+    discord_client_id=$(echo "$discord_client_id" | sed 's/[&/\]/\\&/g')
+    discord_client_secret=$(echo "$discord_client_secret" | sed 's/[&/\]/\\&/g')
+    discord_bot_token=$(echo "$discord_bot_token" | sed 's/[&/\]/\\&/g')
+    owner_ids=$(echo "$owner_ids" | sed 's/[&/\]/\\&/g')
+    cad_timezone=$(echo "$cad_timezone" | sed 's/[&/\]/\\&/g')
+
     sed -i "s|^APP_NAME=.*|APP_NAME=$app_name|" "$ENV_FILE"
     sed -i "s|^APP_URL=.*|APP_URL=$app_url|" "$ENV_FILE"
     sed -i "s|^STEAM_ALLOWED_HOSTS=.*|STEAM_ALLOWED_HOSTS=$steam_allowed_hosts|" "$ENV_FILE"
@@ -186,9 +195,9 @@ function configure_environment() {
     sed -i "s|^CAD_TIMEZONE=.*|CAD_TIMEZONE=$cad_timezone|" "$ENV_FILE"
     sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$db_password|" "$ENV_FILE"
 
-
     echo "Environment variables configured successfully."
 }
+
 
 function install() {
     echo "Starting the installation of Community CAD on x86_64 architecture..."
