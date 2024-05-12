@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_DIR=$PWD
-CC_INSTALL_DIR=$PWD/community-cad
+CC_INSTALL_DIR=$PWD/community-cad-storage
 DOCKER_COMPOSE_FILE="$CC_INSTALL_DIR/docker-compose.yml"
 ENV_FILE="$CC_INSTALL_DIR/.env"  # Define the .env file path
 
