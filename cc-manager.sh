@@ -148,7 +148,8 @@ function update_packages() {
 }
 
 function escape_for_sed() {
-    echo "$1" | sed -e 's/[\/&]/\\&/g'
+    # This function now escapes all potentially problematic characters for sed
+    echo "$1" | sed -e 's/[\/&:]/\\&/g'
 }
 
 function configure_environment() {
@@ -186,6 +187,7 @@ function configure_environment() {
     read -p "Enter your DISCORD_BOT_TOKEN: " discord_bot_token
     read -p 'Enter your OWNER_IDS ("ID1|ID2"): ' owner_ids
     read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
+
     app_name=$(escape_for_sed "$app_name")
     app_key=$(escape_for_sed "$app_key")
     app_url=$(escape_for_sed "$app_url")
@@ -211,6 +213,7 @@ function configure_environment() {
 
     echo "Environment variables configured successfully."
 }
+
 
 
 function install() {
@@ -259,6 +262,8 @@ function install() {
     fi
 
     configure_environment
+
+    sleep 5
 
     echo "Setup is complete. Starting Docker containers..."
     docker-compose up -d
@@ -660,6 +665,7 @@ function resetInstall() {
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         echo "Resetting Installation..."
         sudo docker-compose -f $DOCKER_COMPOSE_FILE down --volumes
+        sudo docker-compose -f $DOCKER_COMPOSE_FILE rm
         sudo rm -rf $CC_INSTALL_DIR
         echo "Installation has been reset. Please reinstall to use Community CAD."
     else
