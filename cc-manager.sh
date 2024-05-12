@@ -110,10 +110,10 @@ function install_docker_compose() {
 function update_packages() {
   if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
     echo "System packages are updating... (Please be patient. May take a bit!)"
-    sudo apt-get update > /dev/null 2>&1
-    sudo apt-get upgrade > /dev/null 2>&1
+    sudo apt-get update -y
+    sudo apt-get upgrade -y
   elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-    sudo yum update > /dev/null 2>&1
+    sudo yum update > /dev/null 2>&1 
     sudo yum upgrade > /dev/null 2>&1
     echo "System packages are updating... (Please be patient. May take a bit!)"
   fi
