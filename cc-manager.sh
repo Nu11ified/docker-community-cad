@@ -411,7 +411,7 @@ function upgrade() {
 function askForAction() {
     print_header
     echo "Select an action:"
-    echo "   1) Install (x86_64)"
+    echo "   1) Install Community CAD"
     echo "   2) Start"
     echo "   3) Stop"
     echo "   4) Restart"
