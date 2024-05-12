@@ -211,18 +211,18 @@ function configure_environment() {
     read -p 'Enter your OWNER_IDS ("ID1|ID2"): ' owner_ids
     read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
 
-    # Use Perl for updating .env file
-    perl -pi -e "s/^APP_NAME=.*\$/APP_NAME=$app_name/" "$ENV_FILE"
-    perl -pi -e "s/^APP_KEY=.*\$/APP_KEY=$app_key/" "$ENV_FILE"
-    perl -pi -e "s/^APP_URL=.*\$/APP_URL=$app_url/" "$ENV_FILE"
-    perl -pi -e "s/^STEAM_ALLOWED_HOSTS=.*\$/STEAM_ALLOWED_HOSTS=$steam_allowed_hosts/" "$ENV_FILE"
-    perl -pi -e "s/^STEAM_CLIENT_SECRET=.*\$/STEAM_CLIENT_SECRET=$steam_client_secret/" "$ENV_FILE"
-    perl -pi -e "s/^DISCORD_CLIENT_ID=.*\$/DISCORD_CLIENT_ID=$discord_client_id/" "$ENV_FILE"
-    perl -pi -e "s/^DISCORD_CLIENT_SECRET=.*\$/DISCORD_CLIENT_SECRET=$discord_client_secret/" "$ENV_FILE"
-    perl -pi -e "s/^DISCORD_BOT_TOKEN=.*\$/DISCORD_BOT_TOKEN=$discord_bot_token/" "$ENV_FILE"
-    perl -pi -e "s/^OWNER_IDS=.*\$/OWNER_IDS=$owner_ids/" "$ENV_FILE"
-    perl -pi -e "s/^CAD_TIMEZONE=.*\$/CAD_TIMEZONE=$cad_timezone/" "$ENV_FILE"
-    perl -pi -e "s/^DB_PASSWORD=.*\$/DB_PASSWORD=$db_password/" "$ENV_FILE"
+
+    perl -pi -e "s/^APP_NAME=.*$/APP_NAME=$app_name/g" "$ENV_FILE"
+    perl -pi -e "s/^APP_KEY=.*$/APP_KEY=$app_key/g" "$ENV_FILE"
+    perl -pi -e "s/^APP_URL=.*$/APP_URL=$app_url/g" "$ENV_FILE"
+    perl -pi -e "s/^STEAM_ALLOWED_HOSTS=.*$/STEAM_ALLOWED_HOSTS=$steam_allowed_hosts/g" "$ENV_FILE"
+    perl -pi -e "s/^STEAM_CLIENT_SECRET=.*$/STEAM_CLIENT_SECRET=$steam_client_secret/g" "$ENV_FILE"
+    perl -pi -e "s/^DISCORD_CLIENT_ID=.*$/DISCORD_CLIENT_ID=$discord_client_id/g" "$ENV_FILE"
+    perl -pi -e "s/^DISCORD_CLIENT_SECRET=.*$/DISCORD_CLIENT_SECRET=$discord_client_secret/g" "$ENV_FILE"
+    perl -pi -e "s/^DISCORD_BOT_TOKEN=.*$/DISCORD_BOT_TOKEN=$discord_bot_token/g" "$ENV_FILE"
+    perl -pi -e "s/^OWNER_IDS=.*$/OWNER_IDS=$owner_ids/g" "$ENV_FILE"
+    perl -pi -e "s/^CAD_TIMEZONE=.*$/CAD_TIMEZONE=$cad_timezone/g" "$ENV_FILE"
+    perl -pi -e "s/^DB_PASSWORD=.*$/DB_PASSWORD=$db_password/g" "$ENV_FILE"
 
     echo "Environment variables configured successfully."
 }
