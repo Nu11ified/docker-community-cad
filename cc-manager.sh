@@ -265,25 +265,31 @@ function install_reverse_proxy() {
             echo "Caddy is already installed. Skipping installation."
         else
             echo "Caddy is not installed. Proceeding with installation..."
-            case $OS in
-                ubuntu|debian)
-                    sudo apt update
-                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-                    sudo apt update
-                    sudo apt install caddy
-                    ;;
-                centos|rocky)
-                    sudo yum install -y 'dnf-command(copr)'
-                    sudo dnf copr enable @caddy/caddy
-                    sudo dnf install -y caddy
-                    ;;
-                *)
-                    echo "OS not supported for Caddy installation."
-                    return
-                    ;;
-            esac
+            if [ -f /etc/os-release ]; then
+                source /etc/os-release
+                case $ID in
+                    ubuntu|debian)
+                        sudo apt update >/dev/null 2>&1
+                        sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https >/dev/null 2>&1
+                        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc >/dev/null 2>&1
+                        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
+                        sudo apt update >/dev/null 2>&1
+                        sudo apt install -y caddy >/dev/null 2>&1
+                        ;;
+                    centos|rocky)
+                        sudo yum install -y 'dnf-command(copr)' >/dev/null 2>&1
+                        sudo dnf copr enable @caddy/caddy >/dev/null 2>&1
+                        sudo dnf install -y caddy >/dev/null 2>&1
+                        ;;
+                    *)
+                        echo "OS not supported for Caddy installation."
+                        return
+                        ;;
+                esac
+            else
+                echo "Cannot determine the operating system."
+                return
+            fi
         fi
 
         # Prompt user for domain name and check A record
@@ -313,10 +319,11 @@ $domain {
 }
 EOF
         echo "Caddyfile has been configured."
-        sudo systemctl restart caddy
+        sudo systemctl restart caddy >/dev/null 2>&1
         echo "Caddy has been restarted. Your reverse proxy is now running."
     fi
 }
+
 
 
 function startServices() {
@@ -420,25 +427,31 @@ function install_caddy_reverse_proxy() {
     else
         echo "Caddy is not installed. Proceeding with installation..."
         # Installation process based on the operating system
-        case $OS in
-            ubuntu|debian)
-                sudo apt update
-                sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
-                curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc
-                curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-                sudo apt update
-                sudo apt install caddy
-                ;;
-            centos|rocky)
-                sudo yum install -y 'dnf-command(copr)'
-                sudo dnf copr enable @caddy/caddy
-                sudo dnf install -y caddy
-                ;;
-            *)
-                echo "OS not supported for Caddy installation."
-                return
-                ;;
-        esac
+        if [ -f /etc/os-release ]; then
+            source /etc/os-release
+            case $ID in
+                ubuntu|debian)
+                    sudo apt update >/dev/null 2>&1
+                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https >/dev/null 2>&1
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc >/dev/null 2>&1
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
+                    sudo apt update >/dev/null 2>&1
+                    sudo apt install -y caddy >/dev/null 2>&1
+                    ;;
+                centos|rocky)
+                    sudo yum install -y 'dnf-command(copr)' >/dev/null 2>&1
+                    sudo dnf copr enable @caddy/caddy >/dev/null 2>&1
+                    sudo dnf install -y caddy >/dev/null 2>&1
+                    ;;
+                *)
+                    echo "OS not supported for Caddy installation."
+                    return
+                    ;;
+            esac
+        else
+            echo "Cannot determine the operating system."
+            return
+        fi
     fi
 
     # Configure Caddy with the new domain
@@ -455,10 +468,9 @@ $domain {
 }
 EOF
     echo "Caddy configuration for $domain has been added."
-    sudo systemctl reload caddy
+    sudo systemctl reload caddy >/dev/null 2>&1
     echo "Caddy has been reloaded to apply new configuration."
 }
-
 
 function install_nginx_reverse_proxy() {
     if [ "$(id -u)" != "0" ]; then
