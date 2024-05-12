@@ -212,35 +212,35 @@ function configure_environment() {
     read -p "Enter your DISCORD_BOT_TOKEN: " discord_bot_token
     read -p 'Enter your OWNER_IDS ("ID1|ID2"): ' owner_ids
     read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
-
-    steam_allowed_hosts="${app_url#https://}"
     discord_redirect_uri="${app_url}/login/discord/handle"
 
-    app_name=$(escape_for_sed "$app_name")
-    app_key=$(escape_for_sed "$app_key")
-    app_url=$(escape_for_sed "$app_url")
-    steam_allowed_hosts=$(escape_for_sed "$steam_allowed_hosts")
-    steam_client_secret=$(escape_for_sed "$steam_client_secret")
-    discord_client_id=$(escape_for_sed "$discord_client_id")
-    discord_client_secret=$(escape_for_sed "$discord_client_secret")
-    discord_bot_token=$(escape_for_sed "$discord_bot_token")
-    owner_ids=$(escape_for_sed "$owner_ids")
-    cad_timezone=$(escape_for_sed "$cad_timezone")
-    discord_redirect_uri=$(escape_for_sed "$discord_redirect_uri")
+    # Backup the original file just in case
+    cp "$ENV_FILE" "${ENV_FILE}.bak"
 
-    sed -i "s|^APP_NAME=.*|APP_NAME=$app_name|" "$ENV_FILE"
-    sed -i "s|^APP_KEY=.*|APP_KEY=$app_key|" "$ENV_FILE"
-    sed -i "s|^APP_URL=.*|APP_URL=$app_url|" "$ENV_FILE"
-    sed -i "s|^STEAM_ALLOWED_HOSTS=.*|STEAM_ALLOWED_HOSTS=$steam_allowed_hosts|" "$ENV_FILE"
-    sed -i "s|^STEAM_CLIENT_SECRET=.*|STEAM_CLIENT_SECRET=$steam_client_secret|" "$ENV_FILE"
-    sed -i "s|^DISCORD_CLIENT_ID=.*|DISCORD_CLIENT_ID=$discord_client_id|" "$ENV_FILE"
-    sed -i "s|^DISCORD_CLIENT_SECRET=.*|DISCORD_CLIENT_SECRET=$discord_client_secret|" "$ENV_FILE"
-    sed -i "s|^DISCORD_BOT_TOKEN=.*|DISCORD_BOT_TOKEN=$discord_bot_token|" "$ENV_FILE"
-    sed -i "s|^OWNER_IDS=.*|OWNER_IDS=$owner_ids|" "$ENV_FILE"
-    sed -i "s|^DISCORD_REDIRECT_URI=.*|DISCORD_REDIRECT_URI=$owner_ids|" "$ENV_FILE"
-    sed -i "s|^CAD_TIMEZONE=.*|CAD_TIMEZONE=$cad_timezone|" "$ENV_FILE"
-    sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$db_password|" "$ENV_FILE"
+    # Temporary file to store new env content
+    temp_env="$(mktemp)"
 
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        key="${line%%=*}"
+        case "$key" in
+            'APP_NAME') line="APP_NAME=$app_name" ;;
+            'APP_KEY') line="APP_KEY=$app_key" ;;
+            'APP_URL') line="APP_URL=$app_url" ;;
+            'STEAM_ALLOWED_HOSTS') line="STEAM_ALLOWED_HOSTS=${app_url#https://}" ;;
+            'STEAM_CLIENT_SECRET') line="STEAM_CLIENT_SECRET=$steam_client_secret" ;;
+            'DISCORD_CLIENT_ID') line="DISCORD_CLIENT_ID=$discord_client_id" ;;
+            'DISCORD_CLIENT_SECRET') line="DISCORD_CLIENT_SECRET=$discord_client_secret" ;;
+            'DISCORD_BOT_TOKEN') line="DISCORD_BOT_TOKEN=$discord_bot_token" ;;
+            'OWNER_IDS') line="OWNER_IDS=$owner_ids" ;;
+            'DISCORD_REDIRECT_URI') line="DISCORD_REDIRECT_URI=$discord_redirect_uri" ;;
+            'CAD_TIMEZONE') line="CAD_TIMEZONE=$cad_timezone" ;;
+            'DB_PASSWORD') line="DB_PASSWORD=$db_password" ;;
+        esac
+        echo "$line" >> "$temp_env"
+    done < "$ENV_FILE"
+
+    # Move the new .env file into place
+    mv "$temp_env" "$ENV_FILE"
     echo "Environment variables configured successfully."
 }
 
