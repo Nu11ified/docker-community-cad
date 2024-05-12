@@ -8,7 +8,7 @@ Here are some direct links as well!
 - [WIP Linux Install Script](https://github.com/CommunityCAD/docker-community-cad/wiki/%5BWIP%5D-Install-Script)
 - [Manual Install Guide](https://github.com/CommunityCAD/docker-community-cad/wiki/Manual-Install-Guide)
 - [Reverse Proxies](https://github.com/CommunityCAD/docker-community-cad/wiki/Reverse-Proxies)
-- [Update Guide]([https://github.com/CommunityCAD/docker-community-cad/wiki/Reverse-Proxies](https://github.com/CommunityCAD/docker-community-cad/wiki/Update-Guide))
+- [Update Guide](https://github.com/CommunityCAD/docker-community-cad/wiki/Update-Guide)
 
 # Community CAD Info
 
