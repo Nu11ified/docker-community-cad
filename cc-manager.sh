@@ -244,10 +244,6 @@ function configure_environment() {
   echo "Environment variables configured successfully."
 }
 
-
-
-
-
 function install() {
     echo "Starting the installation of Community CAD on x86_64 architecture..."
     if [ ! -d "$CC_INSTALL_DIR" ]; then
