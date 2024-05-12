@@ -108,14 +108,13 @@ function install() {
     fi
     cd "$CC_INSTALL_DIR"
 
-    # Prevent installation if the repository is already cloned
     if [ -d ".git" ]; then
         echo "Community CAD repository already exists in the installation directory."
         echo "Installation cannot proceed. If you wish to reinstall, please remove the existing directory first."
         return
     fi
 
-    # Detect OS
+
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         OS=$NAME
@@ -157,6 +156,32 @@ function install_reverse_proxy() {
     echo "Would you like to install a reverse proxy with Caddy? [y/N]"
     read -p "Choice: " choice
     if [[ "$choice" =~ ^[Yy]$ ]]; then
+        # Check if Caddy is already installed
+        if command -v caddy &> /dev/null; then
+            echo "Caddy is already installed. Skipping installation."
+        else
+            echo "Caddy is not installed. Proceeding with installation..."
+            case $OS in
+                ubuntu|debian)
+                    sudo apt update
+                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+                    sudo apt update
+                    sudo apt install caddy
+                    ;;
+                centos|rocky)
+                    sudo yum install -y 'dnf-command(copr)'
+                    sudo dnf copr enable @caddy/caddy
+                    sudo dnf install -y caddy
+                    ;;
+                *)
+                    echo "OS not supported for Caddy installation."
+                    return
+                    ;;
+            esac
+        fi
+
         # Prompt user for domain name and check A record
         echo "Please enter your domain name (e.g., example.com or www.example.com):"
         read -p "Domain name: " domain
@@ -170,32 +195,9 @@ function install_reverse_proxy() {
         fi
 
         echo "If you are using Cloudflare, please ensure your DNS settings for this domain are set to 'DNS only' to allow Caddy to handle HTTPS."
-        echo "Installing Caddy..."
 
-        case $OS in
-            ubuntu|debian)
-                sudo apt update
-                sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
-                curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc
-                curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-                sudo apt update
-                sudo apt install caddy
-                ;;
-            centos|rocky)
-                sudo yum install -y 'dnf-command(copr)'
-                sudo dnf copr enable @caddy/caddy
-                sudo dnf install -y caddy
-                ;;
-            *)
-                echo "OS not supported for Caddy installation."
-                return
-                ;;
-        esac
-
-        if command -v caddy &> /dev/null; then
-            echo "Caddy installed successfully."
-
-            sudo tee /etc/caddy/Caddyfile <<EOF
+        echo "Configuring Caddy..."
+        sudo tee /etc/caddy/Caddyfile <<EOF
 $domain {
     reverse_proxy 127.0.0.1:8000
     encode gzip
@@ -206,14 +208,12 @@ $domain {
     }
 }
 EOF
-            echo "Caddyfile has been configured."
-            sudo systemctl restart caddy
-            echo "Caddy has been restarted. Your reverse proxy is now running."
-        else
-            echo "Caddy could not be installed."
-        fi
+        echo "Caddyfile has been configured."
+        sudo systemctl restart caddy
+        echo "Caddy has been restarted. Your reverse proxy is now running."
     fi
 }
+
 
 function startServices() {
     echo "Starting Community CAD services..."
@@ -251,7 +251,8 @@ function askForAction() {
     echo "   3) Stop"
     echo "   4) Restart"
     echo "   5) Upgrade"
-    echo "   6) Exit"
+    echo "   6) Other"
+    echo "   7) Exit"
     echo
     read -p "Select an option [2]: " action
     case $action in
@@ -260,9 +261,220 @@ function askForAction() {
         3) stopServices ;;
         4) restartServices ;;
         5) upgrade ;;
-        6) exit 0 ;;
+        6) otherOptions ;;
+        7) exit 0 ;;
         *) echo "Invalid option, please try again."; askForAction ;;
     esac
 }
 
+function otherOptions() {
+    print_header
+    echo "Other Options:"
+    echo "   1) Reverse Proxies"
+    echo "   2) Reset Install"
+    echo "   3) Return to Main Menu"
+    echo
+    read -p "Select an option: " otherOption
+    case $otherOption in
+        1) reverseProxyMenu ;;
+        2) resetInstall ;;
+        3) askForAction ;;
+        *) echo "Invalid option, please try again."; otherOptions ;;
+    esac
+}
+
+function reverseProxyMenu() {
+    print_header
+    echo "Reverse Proxy Options:"
+    echo "   1) Install Caddy Reverse Proxy"
+    echo "   2) Install Nginx Reverse Proxy"
+    echo "   3) Return to Other Options"
+    echo
+    read -p "Select an option: " proxyOption
+    case $proxyOption in
+        1) install_caddy_reverse_proxy ;;
+        2) install_nginx_reverse_proxy ;;
+        3) otherOptions ;;
+        *) echo "Invalid option, please try again."; reverseProxyMenu ;;
+    esac
+}
+
+function install_caddy_reverse_proxy() {
+    echo "Checking if Caddy is already installed..."
+    if command -v caddy &> /dev/null; then
+        echo "Caddy is already installed."
+
+        # Prompt user for domain name to check if it's already configured
+        echo "Please enter your domain name to check configuration (e.g., example.com or www.example.com):"
+        read -p "Domain name: " domain
+
+        # Check if domain configuration already exists in Caddyfile
+        if grep -q "$domain" /etc/caddy/Caddyfile; then
+            echo "The domain $domain is already configured in Caddy."
+            return  # Exit the function if domain is already configured
+        fi
+    else
+        echo "Caddy is not installed. Proceeding with installation..."
+        # Installation process based on the operating system
+        case $OS in
+            ubuntu|debian)
+                sudo apt update
+                sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+                curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc
+                curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+                sudo apt update
+                sudo apt install caddy
+                ;;
+            centos|rocky)
+                sudo yum install -y 'dnf-command(copr)'
+                sudo dnf copr enable @caddy/caddy
+                sudo dnf install -y caddy
+                ;;
+            *)
+                echo "OS not supported for Caddy installation."
+                return
+                ;;
+        esac
+    fi
+
+    # Configure Caddy with the new domain
+    echo "Configuring Caddy for $domain..."
+    sudo tee -a /etc/caddy/Caddyfile <<EOF
+$domain {
+    reverse_proxy 127.0.0.1:8000
+    encode gzip
+    header {
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+}
+EOF
+    echo "Caddy configuration for $domain has been added."
+    sudo systemctl reload caddy
+    echo "Caddy has been reloaded to apply new configuration."
+}
+
+
+function install_nginx_reverse_proxy() {
+    if [ "$(id -u)" != "0" ]; then
+        echo "This script must be run as root" 1>&2
+        return 1
+    fi
+
+    echo "Installing Nginx Reverse Proxy..."
+
+    echo "Please enter your domain name (e.g., example.com or www.example.com):"
+    read -p "Domain name: " domain
+
+    if [ -f "/etc/nginx/conf.d/$domain.conf" ]; then
+        echo "Nginx configuration for $domain already exists. Skipping configuration."
+        return 0
+    fi
+
+    # Check if Nginx is installed and install if not
+    if command -v nginx &> /dev/null; then
+        echo "Nginx is already installed."
+    else
+        echo "Nginx is not installed. Installing Nginx..."
+        if [ -f /etc/os-release ]; then
+            . /etc/os-release
+            OS=$ID
+            case $OS in
+                ubuntu|debian)
+                    sudo apt update
+                    sudo apt install -y nginx
+                    ;;
+                centos|rocky)
+                    sudo yum install -y nginx
+                    ;;
+                *)
+                    echo "OS not supported."
+                    return 1
+                    ;;
+            esac
+        else
+            echo "Cannot determine the operating system."
+            return 1
+        fi
+        echo "Nginx installed successfully."
+    fi
+
+    # Install Certbot for SSL
+    echo "Installing Certbot..."
+    case $OS in
+        ubuntu|debian)
+            sudo apt install -y certbot python3-certbot-nginx
+            ;;
+        centos|rocky)
+            sudo yum install -y epel-release
+            sudo yum install -y certbot python3-certbot-nginx
+            ;;
+        *)
+            echo "OS not supported for Certbot."
+            return 1
+            ;;
+    esac
+
+    # Configure Nginx
+    echo "Configuring Nginx..."
+    sudo tee /etc/nginx/conf.d/$domain.conf <<EOF
+server {
+    listen 80;
+    server_name $domain;
+
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name $domain;
+
+    ssl_certificate /etc/letsencrypt/live/$domain/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    include snippets/ssl-params.conf;
+}
+EOF
+    echo "Nginx configuration has been set."
+
+    # Obtain and install SSL certificate
+    sudo certbot --nginx -d $domain --redirect --agree-tos --no-eff-email --keep-until-expiring --non-interactive
+
+    # Reload Nginx to apply changes
+    sudo systemctl reload nginx
+    echo "Nginx has been reloaded. Your reverse proxy with SSL is now running."
+
+    # Set up automatic renewal of the certificate
+    echo "Setting up automatic renewal..."
+    sudo tee -a /etc/crontab <<EOF
+0 12 * * * root certbot renew --quiet --no-self-upgrade --post-hook 'systemctl reload nginx'
+EOF
+    echo "Certificate renewal setup is complete."
+}
+
+
+function resetInstall() {
+    echo "WARNING: This will completely remove the installation and all associated data."
+    read -p "Are you sure you want to reset the installation? (y/N): " confirm
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        echo "Resetting Installation..."
+        docker-compose -f $DOCKER_COMPOSE_FILE down
+        docker-compose -f $DOCKER_COMPOSE_FILE rm
+        sudo rm -rf $CC_INSTALL_DIR
+        echo "Installation has been reset. Please reinstall to use Community CAD."
+    else
+        echo "Reset canceled."
+    fi
+}
 askForAction
