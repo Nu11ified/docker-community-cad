@@ -20,13 +20,24 @@ function install_git() {
   if command_exists git; then
     command echo "Git is already installed."
   else
-    echo "Git is not installed. Installing Git..."
+    echo "Git is not installed. Installing Git... (Please be patient. May take a bit!)"
     if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-      sudo apt-get update > /dev/null 2>&1
       sudo apt-get install -y git > /dev/null 2>&1
     elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-      sudo yum update > /dev/null 2>&1
       sudo yum install -y git > /dev/null 2>&1
+    fi
+  fi
+}
+
+function install_curl() {
+  if command_exists curl; then
+    command echo "Curl is already installed."
+  else
+    echo "Curl is not installed. Installing Curl... (Please be patient. May take a bit!)"
+    if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
+      sudo apt-get install -y curl > /dev/null 2>&1
+    elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
+      sudo yum install -y curl > /dev/null 2>&1
     fi
   fi
 }
@@ -35,7 +46,7 @@ function install_docker() {
   if command_exists docker; then
     command echo "Docker is already installed."
   else
-    echo "Docker is not installed. Installing Docker..."
+    echo "Docker is not installed. Installing Docker... (Please be patient. May take a bit!)"
     curl -fsSL https://get.docker.com -o get-docker.sh  >/dev/null 2>&1
     sudo sh get-docker.sh > /dev/null 2>&1
     sudo usermod -aG docker $USER > /dev/null 2>&1
@@ -47,19 +58,21 @@ function install_docker_compose() {
   if command_exists docker-compose; then
     command echo "Docker Compose is already installed."
   else
-    echo "Docker Compose is not installed. Installing Docker Compose..."
+    echo "Docker Compose is not installed. Installing Docker Compose... (Please be patient. May take a bit!)"
     sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose > /dev/null 2>&1
     sudo chmod +x /usr/local/bin/docker-compose > /dev/null 2>&1
   fi
 }
 
-function update_and_install_packages() {
+function update_packages() {
   if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
+    echo "System packages are updating... (Please be patient. May take a bit!)"
     sudo apt-get update > /dev/null 2>&1
-    sudo apt-get install -y curl git > /dev/null 2>&1
+    sudo apt-get upgrade > /dev/null 2>&1
   elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
     sudo yum update > /dev/null 2>&1
-    sudo yum install -y curl git > /dev/null 2>&1
+    sudo yum upgrade > /dev/null 2>&1
+    echo "System packages are updating... (Please be patient. May take a bit!)"
   fi
 }
 
@@ -133,10 +146,11 @@ function install() {
         OS=$(uname -s)
     fi
 
+    update_packages
     install_git
+    install_curl
     install_docker
     install_docker_compose
-    update_and_install_packages
 
     if [ ! -d "$CC_INSTALL_DIR/.git" ]; then
         echo "Cloning the Community CAD repository..."
