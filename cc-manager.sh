@@ -43,59 +43,59 @@ function install_curl() {
 }
 
 function install_docker() {
-  local os="${1}"
-  echo "Installing Docker for OS: ${os}"
-  echo "Your sudo password might be asked to install Docker"
-
-  if command_exists docker; then
-    command echo "Docker is already installed."
-  else
-    if [[ "${os}" == "debian" ]]; then
-      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg lsb-release
-      sudo mkdir -p /etc/apt/keyrings
-      curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
-      sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
-      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-      return 0
-    elif [[ "${os}" == "ubuntu" || "${os}" == "pop" ]]; then
-      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg lsb-release
-      sudo mkdir -p /etc/apt/keyrings
-      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
-      sudo DEBIAN_FRONTEND=noninteractive apt-get update -y
-      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-      return 0
-    elif [[ "${os}" == "centos" ]]; then
-      sudo yum install -y yum-utils
-      sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-      sudo yum install -y --allowerasing docker-ce docker-ce-cli containerd.io docker-compose-plugin
-      sudo systemctl start docker
-      sudo systemctl enable docker
-      return 0
-    elif [[ "${os}" == "rocky" ]]; then
-      sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-      sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
-      sudo systemctl start docker
-      sudo systemctl enable docker
-      return 0
-    elif [[ "${os}" == "fedora" ]]; then
-      sudo dnf -y install dnf-plugins-core
-      sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-      sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-compose-plugin
-      sudo systemctl start docker
-      sudo systemctl enable docker
-      return 0
-    elif [[ "${os}" == "arch" || "${os}" == "manjaro" ]]; then
-      sudo pacman -Sy --noconfirm docker docker-compose
-      sudo systemctl start docker.service
-      sudo systemctl enable docker.service
-      return 0
-    else
-      return 1
+    if command_exists docker; then
+        echo "Docker is already installed."
+        return 0
     fi
-  fi
+
+    echo "Docker is not installed. Installing Docker..."
+    if [ -f /etc/os-release ]; then
+        source /etc/os-release
+        case $ID in
+            ubuntu | debian)
+                sudo apt-get update
+                sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+                curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add -
+                sudo add-apt-repository "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${ID} $(lsb_release -cs) stable"
+                sudo apt-get update
+                sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+                ;;
+            centos | rocky)
+                sudo yum install -y yum-utils
+                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+                sudo yum install -y docker-ce docker-ce-cli containerd.io
+                sudo systemctl start docker
+                sudo systemctl enable docker
+                ;;
+            fedora)
+                sudo dnf -y install dnf-plugins-core
+                sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+                sudo dnf install -y docker-ce docker-ce-cli containerd.io
+                sudo systemctl start docker
+                sudo systemctl enable docker
+                ;;
+            arch | manjaro)
+                sudo pacman -Syu --noconfirm docker
+                sudo systemctl start docker.service
+                sudo systemctl enable docker.service
+                ;;
+            *)
+                echo "OS not supported for Docker installation. Please install Docker manually."
+                return 1
+                ;;
+        esac
+        if command_exists docker; then
+            echo "Docker installed successfully."
+        else
+            echo "Failed to install Docker."
+            return 1
+        fi
+    else
+        echo "Cannot determine the operating system."
+        return 1
+    fi
 }
+
 
 function install_docker_compose() {
   if command_exists docker-compose; then
