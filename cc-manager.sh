@@ -424,14 +424,16 @@ function otherOptions() {
     print_header
     echo "Other Options:"
     echo "   1) Reverse Proxies"
-    echo "   2) Reset Install"
-    echo "   3) Return to Main Menu"
+    echo "   2) Update System Packages"
+    echo "   3) Reset Install"
+    echo "   4) Return to Main Menu"
     echo
     read -p "Select an option: " otherOption
     case $otherOption in
         1) reverseProxyMenu ;;
-        2) resetInstall ;;
-        3) askForAction ;;
+        2) update_packages ;;
+        3) resetInstall ;;
+        4) askForAction ;;
         *) echo "Invalid option, please try again."; otherOptions ;;
     esac
 }
@@ -451,6 +453,8 @@ function reverseProxyMenu() {
         *) echo "Invalid option, please try again."; reverseProxyMenu ;;
     esac
 }
+
+
 
 function install_caddy_reverse_proxy() {
     echo "Checking if Caddy is already installed..."
