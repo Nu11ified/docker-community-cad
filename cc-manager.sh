@@ -52,7 +52,7 @@ function install_git() {
   if command_exists git; then
     command echo "Git is already installed."
   else
-    echo "Git is not installed. Installing Git... (Please be patient. May take a bit!)"
+    echo "Git is not installed. Installing Git... (Please be patient. May take a bit depending on your system!)"
     if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
       sudo apt-get install -y git >/dev/null 2>&1
     elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
@@ -80,7 +80,7 @@ function install_docker() {
         return 0
     fi
 
-    echo "Installing Docker..."
+    echo "Installing Docker... (Please be patient. May take a bit depending on your system!)"
 
     if [ -f /etc/os-release ]; then
         source /etc/os-release
@@ -135,14 +135,14 @@ function install_docker_compose() {
   if command_exists docker-compose; then
     command echo "Docker Compose is already installed."
   else
-    echo "Docker Compose is not installed. Installing Docker Compose... (Please be patient. May take a bit!)"
+    echo "Docker Compose is not installed. Installing Docker Compose... (Please be patient. May take a bit depending on your system!)"
     sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose >/dev/null 2>&1
     sudo chmod +x /usr/local/bin/docker-compose >/dev/null 2>&1
   fi
 }
 
 function update_packages() {
-    echo "Updating system packages, please wait..."
+    echo "Updating system packages, please wait... (Please be patient. May take a bit depending on your system!)"
 
     if [ -f /etc/os-release ]; then
         source /etc/os-release
