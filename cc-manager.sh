@@ -167,6 +167,8 @@ function configure_environment() {
 
     echo "Setting up environment variables:"
     read -p "Enter your APP_NAME (Community Name): " app_name
+    echo "Please generate an APP_KEY from https://laravel-encryption-key-generator.vercel.app/"
+    read -p "Enter the generated APP_KEY: " app_key
     read -p "Enter your APP_URL (e.g., https://communitycad.app): " app_url
     until validate_url "$app_url"; do
         echo "Invalid URL. Please ensure it starts with https://"
@@ -179,8 +181,8 @@ function configure_environment() {
     read -p "Enter your DISCORD_BOT_TOKEN: " discord_bot_token
     read -p 'Enter your OWNER_IDS ("ID1|ID2"): ' owner_ids
     read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
-
     app_name=$(escape_for_sed "$app_name")
+    app_key=$(escape_for_sed "$app_key")
     app_url=$(escape_for_sed "$app_url")
     steam_allowed_hosts=$(escape_for_sed "$steam_allowed_hosts")
     steam_client_secret=$(escape_for_sed "$steam_client_secret")
@@ -191,6 +193,7 @@ function configure_environment() {
     cad_timezone=$(escape_for_sed "$cad_timezone")
 
     sed -i "s|^APP_NAME=.*|APP_NAME=$app_name|" "$ENV_FILE"
+    sed -i "s|^APP_KEY=.*|APP_KEY=$app_key|" "$ENV_FILE"
     sed -i "s|^APP_URL=.*|APP_URL=$app_url|" "$ENV_FILE"
     sed -i "s|^STEAM_ALLOWED_HOSTS=.*|STEAM_ALLOWED_HOSTS=$steam_allowed_hosts|" "$ENV_FILE"
     sed -i "s|^STEAM_CLIENT_SECRET=.*|STEAM_CLIENT_SECRET=$steam_client_secret|" "$ENV_FILE"
@@ -203,6 +206,7 @@ function configure_environment() {
 
     echo "Environment variables configured successfully."
 }
+
 
 function install() {
     echo "Starting the installation of Community CAD on x86_64 architecture..."
@@ -650,12 +654,12 @@ function resetInstall() {
     read -p "Are you sure you want to reset the installation? (y/N): " confirm
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         echo "Resetting Installation..."
-        docker-compose -f $DOCKER_COMPOSE_FILE down
-        docker-compose -f $DOCKER_COMPOSE_FILE rm
+        docker-compose -f $DOCKER_COMPOSE_FILE down --volumes
         sudo rm -rf $CC_INSTALL_DIR
         echo "Installation has been reset. Please reinstall to use Community CAD."
     else
         echo "Reset canceled."
     fi
 }
+
 askForAction
