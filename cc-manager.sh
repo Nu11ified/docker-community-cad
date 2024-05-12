@@ -29,7 +29,6 @@ function check_for_updates() {
     fi
 }
 
-# Check for updates before proceeding
 check_for_updates
 
 SCRIPT_DIR=$PWD
@@ -376,19 +375,19 @@ EOF
 
 function startServices() {
     echo "Starting Community CAD services..."
-    docker-compose -f $DOCKER_COMPOSE_FILE up -d
+    sudo docker-compose -f $DOCKER_COMPOSE_FILE up -d
     echo "Services started."
 }
 
 function stopServices() {
     echo "Stopping Community CAD services..."
-    docker-compose -f $DOCKER_COMPOSE_FILE down
+    sudo docker-compose -f $DOCKER_COMPOSE_FILE down
     echo "Services stopped."
 }
 
 function restartServices() {
     echo "Restarting Community CAD services..."
-    docker-compose -f $DOCKER_COMPOSE_FILE restart
+    sudo docker-compose -f $DOCKER_COMPOSE_FILE restart
     echo "Services restarted."
 }
 
@@ -396,7 +395,7 @@ function upgrade() {
     echo "Upgrading Community CAD services..."
     stopServices
     echo "Pulling latest versions of images..."
-    docker-compose -f $DOCKER_COMPOSE_FILE pull
+    sudo docker-compose -f $DOCKER_COMPOSE_FILE pull
     startServices
     echo "Upgrade completed."
 }
