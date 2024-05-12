@@ -121,7 +121,7 @@ function update_packages() {
 
 function configure_environment() {
     echo "Configuring environment variables..."
-    
+
     if [ ! -f "$ENV_FILE" ]; then
         echo "No .env file found in $CC_INSTALL_DIR. Please check your installation."
         return 1  
@@ -132,25 +132,28 @@ function configure_environment() {
     }
 
     db_password=$(generate_password)
+    echo "Generated secure DB password."
 
-    echo "Generated DB password: $db_password"
 
-    echo "Generate an app key from https://laravel-encryption-key-generator.vercel.app/ and paste it below:"
-    read -p "Enter your APP_KEY: " app_key
-    read -p "Enter your APP_NAME: " app_name
-    read -p "Enter your APP_URL (https://communitycad.app): " app_url
-    read -p "URL For Steam without https:// (communitycad.app): " steam_allowed_hosts
-    echo "For STEAM_CLIENT_SECRET, visit https://steamcommunity.com/dev/registerkey to register and obtain a key"
-    read -p "Enter your STEAM_CLIENT_SECRET: " steam_client_secret
-    echo "For DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, and DISCORD_BOT_TOKEN, visit https://discord.com/developers/applications to create an application"
+    validate_url() {
+        if [[ "$1" =~ ^https://.+ ]]; then return 0; else return 1; fi
+    }
+
+    echo "Setting up environment variables:"
+    read -p "Enter your APP_NAME (Community Name): " app_name
+    read -p "Enter your APP_URL (e.g., https://communitycad.app): " app_url
+    until validate_url "$app_url"; do
+        echo "Invalid URL. Please ensure it starts with https://"
+        read -p "Enter your APP_URL (e.g., https://communitycad.app): " app_url
+    done
+    read -p "URL For Steam without https:// (e.g., communitycad.app): " steam_allowed_hosts
+    read -p "Enter your STEAM_CLIENT_SECRET (from https://steamcommunity.com/dev/registerkey): " steam_client_secret
     read -p "Enter your DISCORD_CLIENT_ID: " discord_client_id
     read -p "Enter your DISCORD_CLIENT_SECRET: " discord_client_secret
     read -p "Enter your DISCORD_BOT_TOKEN: " discord_bot_token
     read -p 'Enter your OWNER_IDS ("ID1|ID2"): ' owner_ids
-    read -p "Enter your CAD_TIMEZONE: " cad_timezone
+    read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
 
-
-    sed -i "s|^APP_KEY=.*|APP_KEY=$app_key|" "$ENV_FILE"
     sed -i "s|^APP_NAME=.*|APP_NAME=$app_name|" "$ENV_FILE"
     sed -i "s|^APP_URL=.*|APP_URL=$app_url|" "$ENV_FILE"
     sed -i "s|^STEAM_ALLOWED_HOSTS=.*|STEAM_ALLOWED_HOSTS=$steam_allowed_hosts|" "$ENV_FILE"
@@ -161,8 +164,9 @@ function configure_environment() {
     sed -i "s|^OWNER_IDS=.*|OWNER_IDS=$owner_ids|" "$ENV_FILE"
     sed -i "s|^CAD_TIMEZONE=.*|CAD_TIMEZONE=$cad_timezone|" "$ENV_FILE"
     sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$db_password|" "$ENV_FILE"
-}
 
+    echo "Environment variables configured successfully."
+}
 
 function install() {
     echo "Starting the installation of Community CAD on x86_64 architecture..."
