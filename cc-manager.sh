@@ -143,6 +143,10 @@ function update_packages() {
     fi
 }
 
+function escape_for_sed() {
+    echo "$1" | sed -e 's/[\/&]/\\&/g'
+}
+
 function configure_environment() {
     echo "Configuring environment variables..."
 
@@ -265,6 +269,7 @@ function install_reverse_proxy() {
             echo "Caddy is already installed. Skipping installation."
         else
             echo "Caddy is not installed. Proceeding with installation..."
+            # Installation process based on the operating system
             if [ -f /etc/os-release ]; then
                 source /etc/os-release
                 case $ID in
@@ -296,8 +301,14 @@ function install_reverse_proxy() {
         echo "Please enter your domain name (e.g., example.com or www.example.com):"
         read -p "Domain name: " domain
 
+        # Check if domain has been provided
+        if [ -z "$domain" ]; then
+            echo "Domain name cannot be empty. Aborting installation."
+            return
+        fi
+
         echo "Checking if A record exists for the domain..."
-        if host -t A $domain &> /dev/null; then
+        if host -t A "$domain" &> /dev/null; then
             echo "A record exists for $domain."
         else
             echo "No A record found for $domain. Please ensure the A record is correctly set before proceeding."
@@ -307,6 +318,8 @@ function install_reverse_proxy() {
         echo "If you are using Cloudflare, please ensure your DNS settings for this domain are set to 'DNS only' to allow Caddy to handle HTTPS."
 
         echo "Configuring Caddy..."
+        # Configure Caddy with the provided domain
+        sudo mkdir -p /etc/caddy
         sudo tee /etc/caddy/Caddyfile <<EOF
 $domain {
     reverse_proxy 127.0.0.1:8000
@@ -323,8 +336,6 @@ EOF
         echo "Caddy has been restarted. Your reverse proxy is now running."
     fi
 }
-
-
 
 function startServices() {
     echo "Starting Community CAD services..."
@@ -419,14 +430,12 @@ function install_caddy_reverse_proxy() {
         echo "Please enter your domain name to check configuration (e.g., example.com or www.example.com):"
         read -p "Domain name: " domain
 
-        # Check if domain configuration already exists in Caddyfile
         if grep -q "$domain" /etc/caddy/Caddyfile; then
             echo "The domain $domain is already configured in Caddy."
-            return  # Exit the function if domain is already configured
+            return  
         fi
     else
         echo "Caddy is not installed. Proceeding with installation..."
-        # Installation process based on the operating system
         if [ -f /etc/os-release ]; then
             source /etc/os-release
             case $ID in
@@ -454,9 +463,12 @@ function install_caddy_reverse_proxy() {
         fi
     fi
 
-    # Configure Caddy with the new domain
+    echo "Please enter your domain name (e.g., example.com or www.example.com):"
+    read -p "Domain name: " domain
+
     echo "Configuring Caddy for $domain..."
-    sudo tee -a /etc/caddy/Caddyfile <<EOF
+    sudo mkdir -p /etc/caddy
+    sudo tee /etc/caddy/Caddyfile <<EOF
 $domain {
     reverse_proxy 127.0.0.1:8000
     encode gzip
@@ -471,6 +483,7 @@ EOF
     sudo systemctl reload caddy >/dev/null 2>&1
     echo "Caddy has been reloaded to apply new configuration."
 }
+
 
 function install_nginx_reverse_proxy() {
     if [ "$(id -u)" != "0" ]; then
