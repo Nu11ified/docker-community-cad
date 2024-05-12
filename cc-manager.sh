@@ -52,7 +52,7 @@ function install_docker() {
     if [ -f /etc/os-release ]; then
         source /etc/os-release
         case $ID in
-            ubuntu | debian)
+            ubuntu|debian)
                 sudo apt-get update
                 sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
                 curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add -
@@ -60,8 +60,8 @@ function install_docker() {
                 sudo apt-get update
                 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
                 ;;
-            centos | rocky)
-                sudo yum install -y yum-utils
+            centos|rocky|rhel)
+                sudo yum install -y yum-utils device-mapper-persistent-data lvm2
                 sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
                 sudo yum install -y docker-ce docker-ce-cli containerd.io
                 sudo systemctl start docker
@@ -74,7 +74,7 @@ function install_docker() {
                 sudo systemctl start docker
                 sudo systemctl enable docker
                 ;;
-            arch | manjaro)
+            arch|manjaro)
                 sudo pacman -Syu --noconfirm docker
                 sudo systemctl start docker.service
                 sudo systemctl enable docker.service
@@ -108,15 +108,36 @@ function install_docker_compose() {
 }
 
 function update_packages() {
-  if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-    echo "System packages are updating... (Please be patient. May take a bit!)"
-    sudo apt-get update -y
-    sudo apt-get upgrade -y
-  elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-    sudo yum update > /dev/null 2>&1 
-    sudo yum upgrade > /dev/null 2>&1
-    echo "System packages are updating... (Please be patient. May take a bit!)"
-  fi
+    echo "Updating system packages, please wait..."
+
+    if [ -f /etc/os-release ]; then
+        source /etc/os-release
+        case $ID in
+            ubuntu|debian)
+                sudo DEBIAN_FRONTEND=noninteractive apt-get update -y >/dev/null 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y >/dev/null 2>&1
+                ;;
+            centos|rocky|rhel)
+                sudo yum update -y >/dev/null 2>&1
+                sudo yum upgrade -y >/dev/null 2>&1
+                ;;
+            fedora)
+                sudo dnf update -y >/dev/null 2>&1
+                sudo dnf upgrade -y >/dev/null 2>&1
+                ;;
+            arch|manjaro)
+                sudo pacman -Syu --noconfirm >/dev/null 2>&1
+                ;;
+            *)
+                echo "Operating system not supported for automatic package updates."
+                return 1
+                ;;
+        esac
+        echo "System packages have been updated."
+    else
+        echo "Cannot determine the operating system."
+        return 1
+    fi
 }
 
 function configure_environment() {
@@ -164,6 +185,7 @@ function configure_environment() {
     sed -i "s|^OWNER_IDS=.*|OWNER_IDS=$owner_ids|" "$ENV_FILE"
     sed -i "s|^CAD_TIMEZONE=.*|CAD_TIMEZONE=$cad_timezone|" "$ENV_FILE"
     sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$db_password|" "$ENV_FILE"
+
 
     echo "Environment variables configured successfully."
 }
