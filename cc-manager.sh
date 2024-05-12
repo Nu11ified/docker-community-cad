@@ -17,50 +17,50 @@ function command_exists() {
 }
 
 function install_git() {
-    if command_exists git; then
-        echo "Git is already installed."
-    else
-        echo "Git is not installed. Installing Git..."
-        if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-            sudo apt-get update
-            sudo apt-get install -y git
-        elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-            sudo yum update
-            sudo yum install -y git
-        fi
+  if command_exists git; then
+    command echo "Git is already installed."
+  else
+    echo "Git is not installed. Installing Git..."
+    if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
+      sudo apt-get update > /dev/null 2>&1
+      sudo apt-get install -y git > /dev/null 2>&1
+    elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
+      sudo yum update > /dev/null 2>&1
+      sudo yum install -y git > /dev/null 2>&1
     fi
+  fi
 }
 
 function install_docker() {
-    if command_exists docker; then
-        echo "Docker is already installed."
-    else
-        echo "Docker is not installed. Installing Docker..."
-        curl -fsSL https://get.docker.com -o get-docker.sh
-        sudo sh get-docker.sh
-        sudo usermod -aG docker $USER
-        newgrp docker
-    fi
+  if command_exists docker; then
+    command echo "Docker is already installed."
+  else
+    echo "Docker is not installed. Installing Docker..."
+    curl -fsSL https://get.docker.com -o get-docker.sh  >/dev/null 2>&1
+    sudo sh get-docker.sh > /dev/null 2>&1
+    sudo usermod -aG docker $USER > /dev/null 2>&1
+    sudo newgrp docker > /dev/null 2>&1
+  fi
 }
 
 function install_docker_compose() {
-    if command_exists docker-compose; then
-        echo "Docker Compose is already installed."
-    else
-        echo "Docker Compose is not installed. Installing Docker Compose..."
-        sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-    fi
+  if command_exists docker-compose; then
+    command echo "Docker Compose is already installed."
+  else
+    echo "Docker Compose is not installed. Installing Docker Compose..."
+    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose > /dev/null 2>&1
+    sudo chmod +x /usr/local/bin/docker-compose > /dev/null 2>&1
+  fi
 }
 
 function update_and_install_packages() {
-    if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-        sudo apt-get update
-        sudo apt-get install -y curl git
-    elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-        sudo yum update
-        sudo yum install -y curl git
-    fi
+  if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
+    sudo apt-get update > /dev/null 2>&1
+    sudo apt-get install -y curl git > /dev/null 2>&1
+  elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
+    sudo yum update > /dev/null 2>&1
+    sudo yum install -y curl git > /dev/null 2>&1
+  fi
 }
 
 function configure_environment() {
