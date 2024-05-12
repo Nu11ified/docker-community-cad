@@ -439,17 +439,17 @@ function install_caddy_reverse_proxy() {
             source /etc/os-release
             case $ID in
                 ubuntu|debian)
-                    sudo apt update >/dev/null 2>&1
-                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >/dev/null 2>&1
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
-                    sudo apt update >/dev/null 2>&1
-                    sudo apt install -y caddy >/dev/null 2>&1
+                    sudo apt update
+                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+                    sudo apt update
+                    sudo apt install -y caddy
                     ;;
                 centos|rocky)
-                    sudo yum install -y 'dnf-command(copr)' >/dev/null 2>&1
-                    sudo dnf copr enable @caddy/caddy >/dev/null 2>&1
-                    sudo dnf install -y caddy >/dev/null 2>&1
+                    sudo yum install -y 'dnf-command(copr)'
+                    sudo dnf copr enable @caddy/caddy
+                    sudo dnf install -y caddy
                     ;;
                 *)
                     echo "OS not supported for Caddy installation."
