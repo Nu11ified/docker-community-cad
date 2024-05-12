@@ -5,6 +5,33 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+CURRENT_VERSION="0.9.0"
+VERSION_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager-version.txt"  # URL to a file containing the latest version and download link
+SCRIPT_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager.sh"     # Direct link to the latest script version
+
+function check_for_updates() {
+    echo "Checking for updates..."
+    readarray -t version_data < <(curl -s $VERSION_URL)
+
+    ONLINE_VERSION=${version_data[0]}
+    SCRIPT_URL=${version_data[1]}
+
+    if [ "$(printf '%s\n' "$ONLINE_VERSION" "$CURRENT_VERSION" | sort -V | head -n1)" != "$CURRENT_VERSION" ]; then
+        echo "A new version ($ONLINE_VERSION) is available. Updating now..."
+        curl -s $SCRIPT_URL -o "$0.tmp"
+        chmod +x "$0.tmp"
+        mv "$0.tmp" "$0"
+        echo "Update complete. Restarting the script."
+        exec "$0"
+        exit
+    else
+        echo "You are using the latest version ($CURRENT_VERSION)."
+    fi
+}
+
+# Check for updates before proceeding
+check_for_updates
+
 SCRIPT_DIR=$PWD
 CC_INSTALL_DIR=$PWD/community-cad-storage
 DOCKER_COMPOSE_FILE="$CC_INSTALL_DIR/docker-compose.yml"
