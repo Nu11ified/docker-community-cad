@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run with sudo or as root."
+   exit 1
+fi
+
 SCRIPT_DIR=$PWD
 CC_INSTALL_DIR=$PWD/community-cad-storage
 DOCKER_COMPOSE_FILE="$CC_INSTALL_DIR/docker-compose.yml"
@@ -654,7 +659,7 @@ function resetInstall() {
     read -p "Are you sure you want to reset the installation? (y/N): " confirm
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         echo "Resetting Installation..."
-        docker-compose -f $DOCKER_COMPOSE_FILE down --volumes
+        sudo docker-compose -f $DOCKER_COMPOSE_FILE down --volumes
         sudo rm -rf $CC_INSTALL_DIR
         echo "Installation has been reset. Please reinstall to use Community CAD."
     else
