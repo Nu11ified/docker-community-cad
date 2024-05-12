@@ -178,6 +178,10 @@ function escape_for_sed() {
     echo "$1" | sed -e 's/[\/&:]/\\&/g'
 }
 
+function generate_password() {
+  cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1
+}
+
 function configure_environment() {
   echo "Configuring environment variables..."
 
@@ -185,10 +189,6 @@ function configure_environment() {
     echo "No .env file found in $CC_INSTALL_DIR. Please check your installation."
     return 1  
   fi
-
-  generate_password() {
-    cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1
-  }
 
   db_password=$(generate_password)
   echo "Generated secure DB password."
