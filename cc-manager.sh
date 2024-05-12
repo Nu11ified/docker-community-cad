@@ -54,10 +54,9 @@ function install_docker() {
         source /etc/os-release
         case $ID in
             ubuntu|debian)
-                export DEBIAN_FRONTEND=noninteractive
-                sudo apt-get update >/dev/null 2>&1
-                sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common >/dev/null 2>&1
-                sudo curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add - >/dev/null 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https ca-certificates curl software-properties-common >/dev/null 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add - >/dev/null 2>&1
                 sudo DEBIAN_FRONTEND=noninteractive add-apt-repository "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${ID} $(lsb_release -cs) stable" >/dev/null 2>&1
                 sudo DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
                 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io >/dev/null 2>&1
@@ -273,12 +272,12 @@ function install_reverse_proxy() {
                 source /etc/os-release
                 case $ID in
                     ubuntu|debian)
-                        sudo apt update >/dev/null 2>&1
-                        sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https >/dev/null 2>&1
-                        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc >/dev/null 2>&1
-                        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
-                        sudo apt update >/dev/null 2>&1
-                        sudo apt install -y caddy >/dev/null 2>&1
+                        sudo DEBIAN_FRONTEND=noninteractive apt update >/dev/null 2>&1
+                        sudo DEBIAN_FRONTEND=noninteractive apt install -y debian-keyring debian-archive-keyring apt-transport-https >/dev/null 2>&1
+                        DEBIAN_FRONTEND=noninteractive curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc >/dev/null 2>&1
+                        DEBIAN_FRONTEND=noninteractive curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
+                        sudo DEBIAN_FRONTEND=noninteractive apt update >/dev/null 2>&1
+                        sudo DEBIAN_FRONTEND=noninteractive apt install -y caddy >/dev/null 2>&1
                         ;;
                     centos|rocky)
                         sudo yum install -y 'dnf-command(copr)' >/dev/null 2>&1
@@ -316,17 +315,36 @@ function install_reverse_proxy() {
 
         echo "If you are using Cloudflare, please ensure your DNS settings for this domain are set to 'DNS only' to allow Caddy to handle HTTPS."
 
+        echo "Please enter your email for SSL certificate notifications:"
+        read -p "Email: " email
+
+        if [ -z "$email" ]; then
+            echo "Email cannot be empty. Aborting installation."
+            return
+        fi
+
         echo "Configuring Caddy..."
-        # Configure Caddy with the provided domain
+        # Configure Caddy with the provided domain and email for TLS
         sudo mkdir -p /etc/caddy
         sudo tee /etc/caddy/Caddyfile <<EOF
 $domain {
-    reverse_proxy 127.0.0.1:8000
+    reverse_proxy https://127.0.0.1:8000 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
     encode gzip
     header {
         X-Content-Type-Options "nosniff"
         X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=31536000;"
+    }
+    tls $email {
+        curves secp384r1
+    }
+    log {
+        output file /var/log/caddy/$domain.log
     }
 }
 EOF
@@ -438,13 +456,12 @@ function install_caddy_reverse_proxy() {
             source /etc/os-release
             case $ID in
                 ubuntu|debian)
-                    export DEBIAN_FRONTEND=noninteractive
-                    sudo apt update >/dev/null 2>&1
-                    sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >/dev/null 2>&1
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
-                    sudo apt update >/dev/null 2>&1
-                    sudo apt install -y caddy >/dev/null 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractiveapt update >/dev/null 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractiveapt install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
+                    DEBIAN_FRONTEND=noninteractive curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >/dev/null 2>&1
+                    DEBIAN_FRONTEND=noninteractive curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractive apt update >/dev/null 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractive apt install -y caddy >/dev/null 2>&1
                     ;;
                 centos|rocky)
                     sudo yum install -y 'dnf-command(copr)' >/dev/null 2>&1
