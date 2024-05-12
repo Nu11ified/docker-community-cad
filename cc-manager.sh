@@ -291,22 +291,20 @@ function install_reverse_proxy() {
     echo "Would you like to install a reverse proxy with Caddy? [y/N]"
     read -p "Choice: " choice
     if [[ "$choice" =~ ^[Yy]$ ]]; then
-        # Check if Caddy is already installed
         if command -v caddy &> /dev/null; then
             echo "Caddy is already installed. Skipping installation."
         else
             echo "Caddy is not installed. Proceeding with installation..."
-            # Installation process based on the operating system
             if [ -f /etc/os-release ]; then
                 source /etc/os-release
                 case $ID in
                     ubuntu|debian)
-                        sudo DEBIAN_FRONTEND=noninteractive apt update >/dev/null 2>&1
-                        sudo DEBIAN_FRONTEND=noninteractive apt install -y debian-keyring debian-archive-keyring apt-transport-https >/dev/null 2>&1
-                        DEBIAN_FRONTEND=noninteractive curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc >/dev/null 2>&1
-                        DEBIAN_FRONTEND=noninteractive curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
-                        sudo DEBIAN_FRONTEND=noninteractive apt update >/dev/null 2>&1
-                        sudo DEBIAN_FRONTEND=noninteractive apt install -y caddy >/dev/null 2>&1
+                        sudo apt-get update >/dev/null 2>&1
+                        sudo apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
+                        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo tee /etc/apt/trusted.gpg.d/caddy-stable.asc >/dev/null 2>&1
+                        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
+                        sudo apt-get update >/dev/null 2>&1
+                        sudo apt-get install -y caddy >/dev/null 2>&1
                         ;;
                     centos|rocky)
                         sudo yum install -y 'dnf-command(copr)' >/dev/null 2>&1
@@ -324,36 +322,28 @@ function install_reverse_proxy() {
             fi
         fi
 
-        # Prompt user for domain name and check A record
         echo "Please enter your domain name (e.g., example.com or www.example.com):"
         read -p "Domain name: " domain
-
-        # Check if domain has been provided
         if [ -z "$domain" ]; then
             echo "Domain name cannot be empty. Aborting installation."
             return
         fi
 
         echo "Checking if A record exists for the domain..."
-        if host -t A "$domain" &> /dev/null; then
-            echo "A record exists for $domain."
-        else
+        if ! host -t A "$domain" &> /dev/null; then
             echo "No A record found for $domain. Please ensure the A record is correctly set before proceeding."
             return
         fi
-
-        echo "If you are using Cloudflare, please ensure your DNS settings for this domain are set to 'DNS only' to allow Caddy to handle HTTPS."
+        echo "A record exists for $domain."
 
         echo "Please enter your email for SSL certificate notifications:"
         read -p "Email: " email
-
         if [ -z "$email" ]; then
             echo "Email cannot be empty. Aborting installation."
             return
         fi
 
         echo "Configuring Caddy..."
-        # Configure Caddy with the provided domain and email for TLS
         sudo mkdir -p /etc/caddy
         sudo tee /etc/caddy/Caddyfile <<EOF
 $domain {
@@ -382,6 +372,7 @@ EOF
         echo "Caddy has been restarted. Your reverse proxy is now running."
     fi
 }
+
 
 function startServices() {
     echo "Starting Community CAD services..."
@@ -489,8 +480,8 @@ function install_caddy_reverse_proxy() {
             source /etc/os-release
             case $ID in
                 ubuntu|debian)
-                    sudo DEBIAN_FRONTEND=noninteractiveapt update >/dev/null 2>&1
-                    sudo DEBIAN_FRONTEND=noninteractiveapt install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractive apt update >/dev/null 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractive apt install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
                     DEBIAN_FRONTEND=noninteractive curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >/dev/null 2>&1
                     DEBIAN_FRONTEND=noninteractive curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
                     sudo DEBIAN_FRONTEND=noninteractive apt update >/dev/null 2>&1
@@ -521,8 +512,17 @@ function install_caddy_reverse_proxy() {
         return
     fi
 
+    echo "Please enter your email for SSL certificate notifications (e.g., user@example.com):"
+    read -p "Email: " email
+
+    # Check if email has been provided
+    if [ -z "$email" ]; then
+        echo "Email cannot be empty. Aborting installation."
+        return
+    fi
+
     echo "Configuring Caddy for $domain..."
-    
+
     sudo mkdir -p /etc/caddy
 
     sudo tee /etc/caddy/Caddyfile >/dev/null <<EOF
@@ -553,7 +553,6 @@ EOF
     sudo systemctl reload caddy >/dev/null 2>&1
     echo "Caddy has been reloaded to apply new configuration."
 }
-
 
 
 function install_nginx_reverse_proxy() {
