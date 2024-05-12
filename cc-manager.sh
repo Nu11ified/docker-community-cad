@@ -5,7 +5,7 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-CURRENT_VERSION="0.9.0"
+CURRENT_VERSION="1.0.0"
 VERSION_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager-version.txt"  # URL to a file containing the latest version and download link
 SCRIPT_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager.sh"     # Direct link to the latest script version
 
