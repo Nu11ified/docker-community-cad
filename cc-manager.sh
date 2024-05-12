@@ -48,36 +48,38 @@ function install_docker() {
         return 0
     fi
 
-    echo "Docker is not installed. Installing Docker..."
+    echo "Installing Docker..."
+
     if [ -f /etc/os-release ]; then
         source /etc/os-release
         case $ID in
             ubuntu|debian)
-                sudo apt-get update
-                sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-                curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add -
-                sudo add-apt-repository "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${ID} $(lsb_release -cs) stable"
-                sudo apt-get update
-                sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+                export DEBIAN_FRONTEND=noninteractive
+                sudo apt-get update >/dev/null 2>&1
+                sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common >/dev/null 2>&1
+                curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add - >/dev/null 2>&1
+                sudo add-apt-repository "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${ID} $(lsb_release -cs) stable" >/dev/null 2>&1
+                sudo apt-get update >/dev/null 2>&1
+                sudo apt-get install -y docker-ce docker-ce-cli containerd.io >/dev/null 2>&1
                 ;;
             centos|rocky|rhel)
-                sudo yum install -y yum-utils device-mapper-persistent-data lvm2
-                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-                sudo yum install -y docker-ce docker-ce-cli containerd.io
-                sudo systemctl start docker
-                sudo systemctl enable docker
+                sudo yum install -y yum-utils device-mapper-persistent-data lvm2 >/dev/null 2>&1
+                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo >/dev/null 2>&1
+                sudo yum install -y docker-ce docker-ce-cli containerd.io >/dev/null 2>&1
+                sudo systemctl start docker >/dev/null 2>&1
+                sudo systemctl enable docker >/dev/null 2>&1
                 ;;
             fedora)
-                sudo dnf -y install dnf-plugins-core
-                sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-                sudo dnf install -y docker-ce docker-ce-cli containerd.io
-                sudo systemctl start docker
-                sudo systemctl enable docker
+                sudo dnf -y install dnf-plugins-core >/dev/null 2>&1
+                sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo >/dev/null 2>&1
+                sudo dnf install -y docker-ce docker-ce-cli containerd.io >/dev/null 2>&1
+                sudo systemctl start docker >/dev/null 2>&1
+                sudo systemctl enable docker >/dev/null 2>&1
                 ;;
             arch|manjaro)
-                sudo pacman -Syu --noconfirm docker
-                sudo systemctl start docker.service
-                sudo systemctl enable docker.service
+                sudo pacman -Syu --noconfirm docker >/dev/null 2>&1
+                sudo systemctl start docker.service >/dev/null 2>&1
+                sudo systemctl enable docker.service >/dev/null 2>&1
                 ;;
             *)
                 echo "OS not supported for Docker installation. Please install Docker manually."
@@ -95,6 +97,7 @@ function install_docker() {
         return 1
     fi
 }
+
 
 
 function install_docker_compose() {
