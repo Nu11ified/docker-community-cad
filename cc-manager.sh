@@ -214,6 +214,7 @@ function configure_environment() {
     read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
 
     steam_allowed_hosts="${app_url#https://}"
+    discord_redirect_uri="${app_url}/login/discord/handle"
 
     app_name=$(escape_for_sed "$app_name")
     app_key=$(escape_for_sed "$app_key")
@@ -225,6 +226,7 @@ function configure_environment() {
     discord_bot_token=$(escape_for_sed "$discord_bot_token")
     owner_ids=$(escape_for_sed "$owner_ids")
     cad_timezone=$(escape_for_sed "$cad_timezone")
+    discord_redirect_uri=$(escape_for_sed "$discord_redirect_uri")
 
     sed -i "s|^APP_NAME=.*|APP_NAME=$app_name|" "$ENV_FILE"
     sed -i "s|^APP_KEY=.*|APP_KEY=$app_key|" "$ENV_FILE"
@@ -235,14 +237,12 @@ function configure_environment() {
     sed -i "s|^DISCORD_CLIENT_SECRET=.*|DISCORD_CLIENT_SECRET=$discord_client_secret|" "$ENV_FILE"
     sed -i "s|^DISCORD_BOT_TOKEN=.*|DISCORD_BOT_TOKEN=$discord_bot_token|" "$ENV_FILE"
     sed -i "s|^OWNER_IDS=.*|OWNER_IDS=$owner_ids|" "$ENV_FILE"
+    sed -i "s|^DISCORD_REDIRECT_URI=.*|DISCORD_REDIRECT_URI=$owner_ids|" "$ENV_FILE"
     sed -i "s|^CAD_TIMEZONE=.*|CAD_TIMEZONE=$cad_timezone|" "$ENV_FILE"
     sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$db_password|" "$ENV_FILE"
 
     echo "Environment variables configured successfully."
 }
-
-
-
 
 function install() {
     echo "Starting the installation of Community CAD on x86_64 architecture..."
@@ -341,13 +341,6 @@ function install_reverse_proxy() {
             echo "Domain name cannot be empty. Aborting installation."
             return
         fi
-
-        echo "Checking if A record exists for the domain..."
-        if ! host -t A "$domain" &> /dev/null; then
-            echo "No A record found for $domain. Please ensure the A record is correctly set before proceeding."
-            return
-        fi
-        echo "A record exists for $domain."
 
         echo "Please enter your email for SSL certificate notifications:"
         read -p "Email: " email
