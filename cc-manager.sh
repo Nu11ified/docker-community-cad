@@ -426,7 +426,6 @@ function install_caddy_reverse_proxy() {
     if command -v caddy &> /dev/null; then
         echo "Caddy is already installed."
 
-        # Prompt user for domain name to check if it's already configured
         echo "Please enter your domain name to check configuration (e.g., example.com or www.example.com):"
         read -p "Domain name: " domain
 
@@ -466,8 +465,9 @@ function install_caddy_reverse_proxy() {
     echo "Please enter your domain name (e.g., example.com or www.example.com):"
     read -p "Domain name: " domain
 
-    echo "Configuring Caddy for $domain..."
     sudo mkdir -p /etc/caddy
+
+    echo "Configuring Caddy for $domain..."
     sudo tee /etc/caddy/Caddyfile <<EOF
 $domain {
     reverse_proxy 127.0.0.1:8000
@@ -483,6 +483,7 @@ EOF
     sudo systemctl reload caddy >/dev/null 2>&1
     echo "Caddy has been reloaded to apply new configuration."
 }
+
 
 
 function install_nginx_reverse_proxy() {
