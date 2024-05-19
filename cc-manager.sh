@@ -5,27 +5,33 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-CURRENT_VERSION="0.9.0"
+CURRENT_VERSION="1.0.0"
 VERSION_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager-version.txt"
 SCRIPT_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager.sh"
 
+LOG_FILE="/var/log/community-cad-installer.log"
+
+function log() {
+    echo "$(date +"%Y-%m-%d %H:%M:%S") - $1" | tee -a "$LOG_FILE"
+}
+
 function check_for_updates() {
-    echo "Checking for updates..."
+    log "Checking for updates..."
     readarray -t version_data < <(curl -s $VERSION_URL)
 
     ONLINE_VERSION=${version_data[0]}
     UPDATED_SCRIPT_URL=${version_data[1]}
 
     if [ "$(printf '%s\n' "$ONLINE_VERSION" "$CURRENT_VERSION" | sort -V | head -n1)" != "$CURRENT_VERSION" ]; then
-        echo "A new version ($ONLINE_VERSION) is available. Updating now..."
+        log "A new version ($ONLINE_VERSION) is available. Updating now..."
         curl -s $UPDATED_SCRIPT_URL -o "$0.tmp"
         chmod +x "$0.tmp"
         mv "$0.tmp" "$0"
-        echo "Update complete. Restarting the script."
+        log "Update complete. Restarting the script."
         exec "$0"
         exit
     else
-        echo "You are using the latest version ($CURRENT_VERSION)."
+        log "You are using the latest version ($CURRENT_VERSION)."
     fi
 }
 
@@ -47,39 +53,33 @@ function command_exists() {
     type "$1" &> /dev/null
 }
 
-function install_git() {
-    if command_exists git; then
-        echo "Git is already installed."
+function install_package() {
+    local package=$1
+    local install_cmd=$2
+
+    if command_exists $package; then
+        log "$package is already installed."
     else
-        echo "Git is not installed. Installing Git... (Please be patient. May take a bit depending on your system!)"
-        if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-            sudo apt-get install -y git >/dev/null 2>&1
-        elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-            sudo yum install -y git >/dev/null 2>&1
-        fi
+        log "$package is not installed. Installing $package... (Please be patient. May take a bit depending on your system!)"
+        eval $install_cmd
     fi
 }
 
+function install_git() {
+    install_package git "sudo apt-get install -y git >/dev/null 2>&1 || sudo yum install -y git >/dev/null 2>&1"
+}
+
 function install_curl() {
-    if command_exists curl; then
-        echo "Curl is already installed."
-    else
-        echo "Curl is not installed. Installing Curl... (Please be patient. May take a bit!)"
-        if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-            sudo apt-get install -y curl >/dev/null 2>&1
-        elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-            sudo yum install -y curl >/dev/null 2>&1
-        fi
-    fi
+    install_package curl "sudo apt-get install -y curl >/dev/null 2>&1 || sudo yum install -y curl >/dev/null 2>&1"
 }
 
 function install_docker() {
     if command_exists docker; then
-        echo "Docker is already installed."
+        log "Docker is already installed."
         return 0
     fi
 
-    echo "Installing Docker... (Please be patient. May take a bit depending on your system!)"
+    log "Installing Docker... (Please be patient. May take a bit depending on your system!)"
 
     if [ -f /etc/os-release ]; then
         source /etc/os-release
@@ -112,34 +112,28 @@ function install_docker() {
                 sudo systemctl enable docker.service >/dev/null 2>&1
                 ;;
             *)
-                echo "OS not supported for Docker installation. Please install Docker manually."
+                log "OS not supported for Docker installation. Please install Docker manually."
                 return 1
                 ;;
         esac
         if command_exists docker; then
-            echo "Docker installed successfully."
+            log "Docker installed successfully."
         else
-            echo "Failed to install Docker."
+            log "Failed to install Docker."
             return 1
         fi
     else
-        echo "Cannot determine the operating system."
+        log "Cannot determine the operating system."
         return 1
     fi
 }
 
 function install_docker_compose() {
-    if command_exists docker-compose; then
-        echo "Docker Compose is already installed."
-    else
-        echo "Docker Compose is not installed. Installing Docker Compose... (Please be patient. May take a bit depending on your system!)"
-        sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose >/dev/null 2>&1
-        sudo chmod +x /usr/local/bin/docker-compose >/dev/null 2>&1
-    fi
+    install_package docker-compose "sudo curl -L \"https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose >/dev/null 2>&1 && sudo chmod +x /usr/local/bin/docker-compose >/dev/null 2>&1"
 }
 
 function update_packages() {
-    echo "Updating system packages, please wait... (Please be patient. May take a bit depending on your system!)"
+    log "Updating system packages, please wait... (Please be patient. May take a bit depending on your system!)"
 
     if [ -f /etc/os-release ]; then
         source /etc/os-release
@@ -160,13 +154,13 @@ function update_packages() {
                 sudo pacman -Syu --noconfirm >/dev/null 2>&1
                 ;;
             *)
-                echo "Operating system not supported for automatic package updates."
+                log "Operating system not supported for automatic package updates."
                 return 1
                 ;;
         esac
-        echo "System packages have been updated."
+        log "System packages have been updated."
     else
-        echo "Cannot determine the operating system."
+        log "Cannot determine the operating system."
         return 1
     fi
 }
@@ -176,10 +170,10 @@ function escape_for_sed() {
 }
 
 function configure_environment() {
-    echo "Configuring environment variables..."
+    log "Configuring environment variables..."
 
     if [ ! -f "$ENV_FILE" ]; then
-        echo "No .env file found in $CC_INSTALL_DIR. Please check your installation."
+        log "No .env file found in $CC_INSTALL_DIR. Please check your installation."
         return 1  
     fi
 
@@ -188,13 +182,13 @@ function configure_environment() {
     }
 
     db_password=$(generate_password)
-    echo "Generated secure DB password."
+    log "Generated secure DB password."
 
     validate_url() {
         if [[ "$1" =~ ^https://.+ ]]; then return 0; else return 1; fi
     }
 
-    echo "Setting up environment variables:"
+    log "Setting up environment variables:"
     read -p "Enter your APP_NAME (Community Name): " app_name
     echo "Please generate an APP_KEY from https://laravel-encryption-key-generator.vercel.app/"
     read -p "Enter the generated APP_KEY: " app_key
@@ -203,6 +197,8 @@ function configure_environment() {
         echo "Invalid URL. Please ensure it starts with https://"
         read -p "Enter your APP_URL (e.g., https://communitycad.app): " app_url
     done
+
+    log "Collecting other environment variables..."
     read -p "Enter your STEAM_CLIENT_SECRET (from https://steamcommunity.com/dev/registerkey): " steam_client_secret
     read -p "Enter your DISCORD_CLIENT_ID: " discord_client_id
     read -p "Enter your DISCORD_CLIENT_SECRET: " discord_client_secret
@@ -234,21 +230,21 @@ function configure_environment() {
     done < "$ENV_FILE"
 
     mv "$temp_env" "$ENV_FILE"
-    echo "Environment variables configured successfully."
+    log "Environment variables configured successfully."
 }
 
 function install() {
-    echo "Starting the installation of Community CAD on x86_64 architecture..."
+    log "Starting the installation of Community CAD on x86_64 architecture..."
     if [ ! -d "$CC_INSTALL_DIR" ]; then
         mkdir -p "$CC_INSTALL_DIR"
     else
-        echo "Installation directory already exists. Using existing directory."
+        log "Installation directory already exists. Using existing directory."
     fi
     cd "$CC_INSTALL_DIR"
 
     if [ -d ".git" ]; then
-        echo "Community CAD repository already exists in the installation directory."
-        echo "Installation cannot proceed. If you wish to reinstall, please remove the existing directory first."
+        log "Community CAD repository already exists in the installation directory."
+        log "Installation cannot proceed. If you wish to reinstall, please remove the existing directory first."
         return
     fi
 
@@ -268,26 +264,26 @@ function install() {
     install_docker_compose
 
     if [ ! -d "$CC_INSTALL_DIR/.git" ]; then
-        echo "Cloning the Community CAD repository..."
+        log "Cloning the Community CAD repository..."
         git clone https://github.com/CommunityCAD/docker-community-cad.git "$CC_INSTALL_DIR"
     else
-        echo "Repository already cloned. Updating repository..."
+        log "Repository already cloned. Updating repository..."
         git pull
     fi
 
     if [ ! -f ".env" ]; then
-        echo "Creating a new .env file..."
+        log "Creating a new .env file..."
         cp .env.example .env
-        echo "A new .env file has been created from .env.example."
+        log "A new .env file has been created from .env.example."
     fi
 
     configure_environment
 
     sleep 5
 
-    echo "Setup is complete. Starting Docker containers..."
+    log "Setup is complete. Starting Docker containers..."
     docker-compose up -d
-    echo "Installation and setup are complete. Community CAD is now running."
+    log "Installation and setup are complete. Community CAD is now running."
 
     install_reverse_proxy
 }
@@ -297,9 +293,9 @@ function install_reverse_proxy() {
     read -p "Choice: " choice
     if [[ "$choice" =~ ^[Yy]$ ]]; then
         if command -v caddy &> /dev/null; then
-            echo "Caddy is already installed. Skipping installation."
+            log "Caddy is already installed. Skipping installation."
         else
-            echo "Caddy is not installed. Proceeding with installation..."
+            log "Caddy is not installed. Proceeding with installation..."
             if [ -f /etc/os-release ]; then
                 source /etc/os-release
                 case $ID in
@@ -317,12 +313,12 @@ function install_reverse_proxy() {
                         sudo dnf install -y caddy >/dev/null 2>&1
                         ;;
                     *)
-                        echo "OS not supported for Caddy installation."
+                        log "OS not supported for Caddy installation."
                         return
                         ;;
                 esac
             else
-                echo "Cannot determine the operating system."
+                log "Cannot determine the operating system."
                 return
             fi
         fi
@@ -330,18 +326,18 @@ function install_reverse_proxy() {
         echo "Please enter your domain name (e.g., example.com or www.example.com):"
         read -p "Domain name: " domain
         if [ -z "$domain" ]; then
-            echo "Domain name cannot be empty. Aborting installation."
+            log "Domain name cannot be empty. Aborting installation."
             return
         fi
 
         echo "Please enter your email for SSL certificate notifications:"
         read -p "Email: " email
         if [ -z "$email" ]; then
-            echo "Email cannot be empty. Aborting installation."
+            log "Email cannot be empty. Aborting installation."
             return
         fi
 
-        echo "Configuring Caddy..."
+        log "Configuring Caddy..."
         sudo mkdir -p /etc/caddy
         sudo tee /etc/caddy/Caddyfile <<EOF
 $domain {
@@ -365,37 +361,37 @@ $domain {
     }
 }
 EOF
-        echo "Caddyfile has been configured."
+        log "Caddyfile has been configured."
         sudo systemctl restart caddy >/dev/null 2>&1
-        echo "Caddy has been restarted. Your reverse proxy is now running."
+        log "Caddy has been restarted. Your reverse proxy is now running."
     fi
 }
 
 function startServices() {
-    echo "Starting Community CAD services..."
+    log "Starting Community CAD services..."
     sudo docker-compose -f $DOCKER_COMPOSE_FILE up -d
-    echo "Services started."
+    log "Services started."
 }
 
 function stopServices() {
-    echo "Stopping Community CAD services..."
+    log "Stopping Community CAD services..."
     sudo docker-compose -f $DOCKER_COMPOSE_FILE down
-    echo "Services stopped."
+    log "Services stopped."
 }
 
 function restartServices() {
-    echo "Restarting Community CAD services..."
+    log "Restarting Community CAD services..."
     sudo docker-compose -f $DOCKER_COMPOSE_FILE restart
-    echo "Services restarted."
+    log "Services restarted."
 }
 
 function upgrade() {
-    echo "Upgrading Community CAD services..."
+    log "Upgrading Community CAD services..."
     stopServices
-    echo "Pulling latest versions of images..."
+    log "Pulling latest versions of images..."
     sudo docker-compose -f $DOCKER_COMPOSE_FILE pull
     startServices
-    echo "Upgrade completed."
+    log "Upgrade completed."
 }
 
 function askForAction() {
@@ -459,17 +455,17 @@ function reverseProxyMenu() {
 function install_caddy_reverse_proxy() {
     echo "Checking if Caddy is already installed..."
     if command -v caddy &> /dev/null; then
-        echo "Caddy is already installed."
+        log "Caddy is already installed."
 
         echo "Please enter your domain name to check configuration (e.g., example.com or www.example.com):"
         read -p "Domain name: " domain
 
         if grep -q "$domain" /etc/caddy/Caddyfile; then
-            echo "The domain $domain is already configured in Caddy."
+            log "The domain $domain is already configured in Caddy."
             return  
         fi
     else
-        echo "Caddy is not installed. Proceeding with installation..."
+        log "Caddy is not installed. Proceeding with installation..."
         if [ -f /etc/os-release ]; then
             source /etc/os-release
             case $ID in
@@ -487,12 +483,12 @@ function install_caddy_reverse_proxy() {
                     sudo dnf install -y caddy >/dev/null 2>&1
                     ;;
                 *)
-                    echo "OS not supported for Caddy installation."
+                    log "OS not supported for Caddy installation."
                     return
                     ;;
             esac
         else
-            echo "Cannot determine the operating system."
+            log "Cannot determine the operating system."
             return
         fi
     fi
@@ -501,7 +497,7 @@ function install_caddy_reverse_proxy() {
     read -p "Domain name: " domain
 
     if [ -z "$domain" ]; then
-        echo "Domain name cannot be empty. Aborting installation."
+        log "Domain name cannot be empty. Aborting installation."
         return
     fi
 
@@ -509,11 +505,11 @@ function install_caddy_reverse_proxy() {
     read -p "Email: " email
 
     if [ -z "$email" ]; then
-        echo "Email cannot be empty. Aborting installation."
+        log "Email cannot be empty. Aborting installation."
         return
     fi
 
-    echo "Configuring Caddy for $domain..."
+    log "Configuring Caddy for $domain..."
 
     sudo mkdir -p /etc/caddy
 
@@ -539,10 +535,10 @@ $domain {
     }
 }
 EOF
-    echo "Caddy configuration for $domain has been added."
+    log "Caddy configuration for $domain has been added."
 
     sudo systemctl reload caddy >/dev/null 2>&1
-    echo "Caddy has been reloaded to apply new configuration."
+    log "Caddy has been reloaded to apply new configuration."
 }
 
 function install_nginx_reverse_proxy() {
@@ -551,20 +547,20 @@ function install_nginx_reverse_proxy() {
         return 1
     fi
 
-    echo "Installing Nginx Reverse Proxy..."
+    log "Installing Nginx Reverse Proxy..."
 
     echo "Please enter your domain name (e.g., example.com or www.example.com):"
     read -p "Domain name: " domain
 
     if [ -f "/etc/nginx/conf.d/$domain.conf" ]; then
-        echo "Nginx configuration for $domain already exists. Skipping configuration."
+        log "Nginx configuration for $domain already exists. Skipping configuration."
         return 0
     fi
 
     if command -v nginx &> /dev/null; then
-        echo "Nginx is already installed."
+        log "Nginx is already installed."
     else
-        echo "Nginx is not installed. Installing Nginx..."
+        log "Nginx is not installed. Installing Nginx..."
         if [ -f /etc/os-release ]; then
             . /etc/os-release
             OS=$ID
@@ -577,18 +573,18 @@ function install_nginx_reverse_proxy() {
                     sudo yum install -y nginx
                     ;;
                 *)
-                    echo "OS not supported."
+                    log "OS not supported."
                     return 1
                     ;;
             esac
         else
-            echo "Cannot determine the operating system."
+            log "Cannot determine the operating system."
             return 1
         fi
-        echo "Nginx installed successfully."
+        log "Nginx installed successfully."
     fi
 
-    echo "Installing Certbot..."
+    log "Installing Certbot..."
     case $OS in
         ubuntu|debian)
             sudo apt install -y certbot python3-certbot-nginx
@@ -598,12 +594,12 @@ function install_nginx_reverse_proxy() {
             sudo yum install -y certbot python3-certbot-nginx
             ;;
         *)
-            echo "OS not supported for Certbot."
+            log "OS not supported for Certbot."
             return 1
             ;;
     esac
 
-    echo "Configuring Nginx..."
+    log "Configuring Nginx..."
     sudo tee /etc/nginx/conf.d/$domain.conf <<EOF
 server {
     listen 80;
@@ -646,31 +642,31 @@ server {
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 }
 EOF
-    echo "Nginx configuration has been set."
+    log "Nginx configuration has been set."
 
     sudo certbot --nginx -d $domain --redirect --agree-tos --no-eff-email --keep-until-expiring --non-interactive
 
     sudo systemctl reload nginx
-    echo "Nginx has been reloaded. Your reverse proxy with SSL is now running."
+    log "Nginx has been reloaded. Your reverse proxy with SSL is now running."
 
-    echo "Setting up automatic renewal..."
+    log "Setting up automatic renewal..."
     sudo tee -a /etc/crontab <<EOF
 0 12 * * * root certbot renew --quiet --no-self-upgrade --post-hook 'systemctl reload nginx'
 EOF
-    echo "Certificate renewal setup is complete."
+    log "Certificate renewal setup is complete."
 }
 
 function resetInstall() {
-    echo "WARNING: This will completely remove the installation and all associated data."
+    log "WARNING: This will completely remove the installation and all associated data."
     read -p "Are you sure you want to reset the installation? (y/N): " confirm
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
-        echo "Resetting Installation..."
+        log "Resetting Installation..."
         sudo docker-compose -f $DOCKER_COMPOSE_FILE down --volumes
         sudo docker-compose -f $DOCKER_COMPOSE_FILE rm
         sudo rm -rf $CC_INSTALL_DIR
-        echo "Installation has been reset. Please reinstall to use Community CAD."
+        log "Installation has been reset. Please reinstall to use Community CAD."
     else
-        echo "Reset canceled."
+        log "Reset canceled."
     fi
 }
 
