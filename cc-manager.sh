@@ -5,20 +5,20 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-CURRENT_VERSION="1.0.0"
-VERSION_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager-version.txt"  # URL to a file containing the latest version and download link
-SCRIPT_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager.sh"     # Direct link to the latest script version
+CURRENT_VERSION="0.9.0"
+VERSION_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager-version.txt"
+SCRIPT_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager.sh"
 
 function check_for_updates() {
     echo "Checking for updates..."
     readarray -t version_data < <(curl -s $VERSION_URL)
 
     ONLINE_VERSION=${version_data[0]}
-    SCRIPT_URL=${version_data[1]}
+    UPDATED_SCRIPT_URL=${version_data[1]}
 
     if [ "$(printf '%s\n' "$ONLINE_VERSION" "$CURRENT_VERSION" | sort -V | head -n1)" != "$CURRENT_VERSION" ]; then
         echo "A new version ($ONLINE_VERSION) is available. Updating now..."
-        curl -s $SCRIPT_URL -o "$0.tmp"
+        curl -s $UPDATED_SCRIPT_URL -o "$0.tmp"
         chmod +x "$0.tmp"
         mv "$0.tmp" "$0"
         echo "Update complete. Restarting the script."
@@ -34,7 +34,7 @@ check_for_updates
 SCRIPT_DIR=$PWD
 CC_INSTALL_DIR=$PWD/community-cad-storage
 DOCKER_COMPOSE_FILE="$CC_INSTALL_DIR/docker-compose.yml"
-ENV_FILE="$CC_INSTALL_DIR/.env"  # Define the .env file path
+ENV_FILE="$CC_INSTALL_DIR/.env"
 
 function print_header() {
     clear
@@ -48,29 +48,29 @@ function command_exists() {
 }
 
 function install_git() {
-  if command_exists git; then
-    command echo "Git is already installed."
-  else
-    echo "Git is not installed. Installing Git... (Please be patient. May take a bit depending on your system!)"
-    if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-      sudo apt-get install -y git >/dev/null 2>&1
-    elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-      sudo yum install -y git >/dev/null 2>&1
+    if command_exists git; then
+        echo "Git is already installed."
+    else
+        echo "Git is not installed. Installing Git... (Please be patient. May take a bit depending on your system!)"
+        if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
+            sudo apt-get install -y git >/dev/null 2>&1
+        elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
+            sudo yum install -y git >/dev/null 2>&1
+        fi
     fi
-  fi
 }
 
 function install_curl() {
-  if command_exists curl; then
-    command echo "Curl is already installed."
-  else
-    echo "Curl is not installed. Installing Curl... (Please be patient. May take a bit!)"
-    if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
-      sudo apt-get install -y curl >/dev/null 2>&1
-    elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
-      sudo yum install -y curl >/dev/null 2>&1
+    if command_exists curl; then
+        echo "Curl is already installed."
+    else
+        echo "Curl is not installed. Installing Curl... (Please be patient. May take a bit!)"
+        if [[ $OS == *"Ubuntu"* || $OS == *"Debian"* ]]; then
+            sudo apt-get install -y curl >/dev/null 2>&1
+        elif [[ $OS == *"CentOS"* || $OS == *"Rocky"* ]]; then
+            sudo yum install -y curl >/dev/null 2>&1
+        fi
     fi
-  fi
 }
 
 function install_docker() {
@@ -128,16 +128,14 @@ function install_docker() {
     fi
 }
 
-
-
 function install_docker_compose() {
-  if command_exists docker-compose; then
-    command echo "Docker Compose is already installed."
-  else
-    echo "Docker Compose is not installed. Installing Docker Compose... (Please be patient. May take a bit depending on your system!)"
-    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose >/dev/null 2>&1
-    sudo chmod +x /usr/local/bin/docker-compose >/dev/null 2>&1
-  fi
+    if command_exists docker-compose; then
+        echo "Docker Compose is already installed."
+    else
+        echo "Docker Compose is not installed. Installing Docker Compose... (Please be patient. May take a bit depending on your system!)"
+        sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose >/dev/null 2>&1
+        sudo chmod +x /usr/local/bin/docker-compose >/dev/null 2>&1
+    fi
 }
 
 function update_packages() {
@@ -174,7 +172,6 @@ function update_packages() {
 }
 
 function escape_for_sed() {
-    # This function now escapes all potentially problematic characters for sed
     echo "$1" | sed -e 's/[\/&:]/\\&/g'
 }
 
@@ -214,10 +211,7 @@ function configure_environment() {
     read -p "Enter your CAD_TIMEZONE (e.g., America/Chicago): " cad_timezone
     discord_redirect_uri="${app_url}/login/discord/handle"
 
-    # Backup the original file just in case
     cp "$ENV_FILE" "${ENV_FILE}.bak"
-
-    # Temporary file to store new env content
     temp_env="$(mktemp)"
 
     while IFS= read -r line || [[ -n "$line" ]]; do
@@ -239,7 +233,6 @@ function configure_environment() {
         echo "$line" >> "$temp_env"
     done < "$ENV_FILE"
 
-    # Move the new .env file into place
     mv "$temp_env" "$ENV_FILE"
     echo "Environment variables configured successfully."
 }
@@ -258,7 +251,6 @@ function install() {
         echo "Installation cannot proceed. If you wish to reinstall, please remove the existing directory first."
         return
     fi
-
 
     if [ -f /etc/os-release ]; then
         . /etc/os-release
@@ -379,7 +371,6 @@ EOF
     fi
 }
 
-
 function startServices() {
     echo "Starting Community CAD services..."
     sudo docker-compose -f $DOCKER_COMPOSE_FILE up -d
@@ -406,7 +397,6 @@ function upgrade() {
     startServices
     echo "Upgrade completed."
 }
-
 
 function askForAction() {
     print_header
@@ -466,8 +456,6 @@ function reverseProxyMenu() {
     esac
 }
 
-
-
 function install_caddy_reverse_proxy() {
     echo "Checking if Caddy is already installed..."
     if command -v caddy &> /dev/null; then
@@ -512,7 +500,6 @@ function install_caddy_reverse_proxy() {
     echo "Please enter your domain name (e.g., example.com or www.example.com):"
     read -p "Domain name: " domain
 
-    # Check if domain has been provided
     if [ -z "$domain" ]; then
         echo "Domain name cannot be empty. Aborting installation."
         return
@@ -521,7 +508,6 @@ function install_caddy_reverse_proxy() {
     echo "Please enter your email for SSL certificate notifications (e.g., user@example.com):"
     read -p "Email: " email
 
-    # Check if email has been provided
     if [ -z "$email" ]; then
         echo "Email cannot be empty. Aborting installation."
         return
@@ -555,11 +541,9 @@ $domain {
 EOF
     echo "Caddy configuration for $domain has been added."
 
-    # Reload Caddy to apply the new configuration
     sudo systemctl reload caddy >/dev/null 2>&1
     echo "Caddy has been reloaded to apply new configuration."
 }
-
 
 function install_nginx_reverse_proxy() {
     if [ "$(id -u)" != "0" ]; then
@@ -577,7 +561,6 @@ function install_nginx_reverse_proxy() {
         return 0
     fi
 
-    # Check if Nginx is installed and install if not
     if command -v nginx &> /dev/null; then
         echo "Nginx is already installed."
     else
@@ -605,7 +588,6 @@ function install_nginx_reverse_proxy() {
         echo "Nginx installed successfully."
     fi
 
-    # Install Certbot for SSL
     echo "Installing Certbot..."
     case $OS in
         ubuntu|debian)
@@ -621,7 +603,6 @@ function install_nginx_reverse_proxy() {
             ;;
     esac
 
-    # Configure Nginx
     echo "Configuring Nginx..."
     sudo tee /etc/nginx/conf.d/$domain.conf <<EOF
 server {
@@ -639,8 +620,8 @@ server {
 
     ssl_certificate /etc/letsencrypt/live/$domain/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
-	
-	ssl_protocols TLSv1.2 TLSv1.3;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
     ssl_prefer_server_ciphers on;
     ssl_session_cache shared:SSL:10m;
@@ -660,28 +641,24 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-	
-	gzip on;
+
+    gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 }
 EOF
     echo "Nginx configuration has been set."
 
-    # Obtain and install SSL certificate
     sudo certbot --nginx -d $domain --redirect --agree-tos --no-eff-email --keep-until-expiring --non-interactive
 
-    # Reload Nginx to apply changes
     sudo systemctl reload nginx
     echo "Nginx has been reloaded. Your reverse proxy with SSL is now running."
 
-    # Set up automatic renewal of the certificate
     echo "Setting up automatic renewal..."
     sudo tee -a /etc/crontab <<EOF
 0 12 * * * root certbot renew --quiet --no-self-upgrade --post-hook 'systemctl reload nginx'
 EOF
     echo "Certificate renewal setup is complete."
 }
-
 
 function resetInstall() {
     echo "WARNING: This will completely remove the installation and all associated data."
