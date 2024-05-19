@@ -295,16 +295,10 @@ function install() {
         git pull
     fi
 
-    if [ ! -f ".env.example" ]; then
-        log "No .env.example file found in the repository. Please check your installation."
-        return
-    fi
-
-    if [ ! -f ".env" ]; then
-        log "Creating a new .env file..."
-        cp .env.example .env
-        log "A new .env file has been created from .env.example."
-    fi
+   if [ ! -f ".env" ]; then
+       log "No .env file found in the repository. Please check your installation."
+       return
+   fi
 
     configure_environment
 
