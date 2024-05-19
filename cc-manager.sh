@@ -5,7 +5,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-CURRENT_VERSION="1.0.1"
+VERSION_FILE="/var/log/cc-manager-version.txt"
 VERSION_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager-version.txt"
 SCRIPT_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager.sh"
 LOG_FILE="/var/log/community-cad-installer.log"
@@ -14,11 +14,27 @@ function log() {
     echo "$(date +"%Y-%m-%d %H:%M:%S") - $1" | tee -a "$LOG_FILE"
 }
 
+function get_current_version() {
+    if [[ -f "$VERSION_FILE" ]]; then
+        cat "$VERSION_FILE"
+    else
+        echo "none"
+    fi
+}
+
+CURRENT_VERSION=$(get_current_version)
+
 function check_for_updates() {
     log "Checking for updates..."
     ONLINE_VERSION=$(curl -s $VERSION_URL | tr -d '[:space:]')
     log "Online version: $ONLINE_VERSION"
     log "Current version: $CURRENT_VERSION"
+
+    if [[ "$CURRENT_VERSION" == "none" ]]; then
+        log "Version file is missing. Creating it with the latest online version."
+        echo "$ONLINE_VERSION" > "$VERSION_FILE"
+        CURRENT_VERSION=$ONLINE_VERSION
+    fi
 
     if [ "$ONLINE_VERSION" != "$CURRENT_VERSION" ]; then
         log "A new version ($ONLINE_VERSION) is available. Updating now..."
@@ -29,6 +45,7 @@ function check_for_updates() {
         fi
         chmod +x "$0.tmp"
         mv "$0.tmp" "$0"
+        echo "$ONLINE_VERSION" > "$VERSION_FILE"
         log "Update complete. Restarting the script."
         exec "$0"
         exit
