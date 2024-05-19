@@ -135,35 +135,58 @@ function install_docker() {
 
     log "Installing Docker... (Please be patient. May take a bit depending on your system!)"
     provide_feedback "Installing Docker..." &
+    FEEDBACK_PID=$!
+
     if [ -f /etc/os-release ]; then
         source /etc/os-release
         case $ID in
             ubuntu|debian)
-                sudo DEBIAN_FRONTEND=noninteractive apt-get update >> "$RAW_LOG_FILE" 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https ca-certificates curl software-properties-common >> "$RAW_LOG_FILE" 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add - >> "$RAW_LOG_FILE" 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive add-apt-repository "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${ID} $(lsb_release -cs) stable" >> "$RAW_LOG_FILE" 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive apt-get update >> "$RAW_LOG_FILE" 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io >> "$RAW_LOG_FILE" 2>&1
+                log "Updating package lists..."
+                sudo DEBIAN_FRONTEND=noninteractive apt-get update 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Installing required packages..."
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https ca-certificates curl software-properties-common 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Adding Docker's official GPG key..."
+                sudo DEBIAN_FRONTEND=noninteractive curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add - 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Setting up Docker repository..."
+                sudo DEBIAN_FRONTEND=noninteractive add-apt-repository "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${ID} $(lsb_release -cs) stable" 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Updating package lists again..."
+                sudo DEBIAN_FRONTEND=noninteractive apt-get update 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Installing Docker..."
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
                 ;;
             centos|rocky|rhel)
-                sudo yum install -y yum-utils device-mapper-persistent-data lvm2 >> "$RAW_LOG_FILE" 2>&1
-                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo >> "$RAW_LOG_FILE" 2>&1
-                sudo yum install -y docker-ce docker-ce-cli containerd.io >> "$RAW_LOG_FILE" 2>&1
-                sudo systemctl start docker >> "$RAW_LOG_FILE" 2>&1
-                sudo systemctl enable docker >> "$RAW_LOG_FILE" 2>&1
+                log "Installing required packages..."
+                sudo yum install -y yum-utils device-mapper-persistent-data lvm2 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Setting up Docker repository..."
+                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Installing Docker..."
+                sudo yum install -y docker-ce docker-ce-cli containerd.io 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Starting Docker service..."
+                sudo systemctl start docker 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Enabling Docker service..."
+                sudo systemctl enable docker 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
                 ;;
             fedora)
-                sudo dnf -y install dnf-plugins-core >> "$RAW_LOG_FILE" 2>&1
-                sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo >> "$RAW_LOG_FILE" 2>&1
-                sudo dnf install -y docker-ce docker-ce-cli containerd.io >> "$RAW_LOG_FILE" 2>&1
-                sudo systemctl start docker >> "$RAW_LOG_FILE" 2>&1
-                sudo systemctl enable docker >> "$RAW_LOG_FILE" 2>&1
+                log "Installing required packages..."
+                sudo dnf -y install dnf-plugins-core 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Setting up Docker repository..."
+                sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Installing Docker..."
+                sudo dnf install -y docker-ce docker-ce-cli containerd.io 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Starting Docker service..."
+                sudo systemctl start docker 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Enabling Docker service..."
+                sudo systemctl enable docker 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
                 ;;
             arch|manjaro)
-                sudo pacman -Syu --noconfirm docker >> "$RAW_LOG_FILE" 2>&1
-                sudo systemctl start docker.service >> "$RAW_LOG_FILE" 2>&1
-                sudo systemctl enable docker.service >> "$RAW_LOG_FILE" 2>&1
+                log "Updating package lists..."
+                sudo pacman -Syu --noconfirm 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Installing Docker..."
+                sudo pacman -Syu --noconfirm docker 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Starting Docker service..."
+                sudo systemctl start docker.service 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
+                log "Enabling Docker service..."
+                sudo systemctl enable docker.service 2>&1 | tee -a "$RAW_LOG_FILE" | tee -a "$LOG_FILE"
                 ;;
             *)
                 log "OS not supported for Docker installation. Please install Docker manually."
@@ -172,7 +195,9 @@ function install_docker() {
                 return 1
                 ;;
         esac
-        wait
+        kill $FEEDBACK_PID
+        wait $FEEDBACK_PID 2>/dev/null
+        
         if command_exists docker; then
             log "Docker installed successfully."
         else
@@ -280,7 +305,7 @@ function configure_environment() {
             'STEAM_CLIENT_SECRET') line="STEAM_CLIENT_SECRET=$steam_client_secret" ;;
             'DISCORD_CLIENT_ID') line="DISCORD_CLIENT_ID=$discord_client_id" ;;
             'DISCORD_CLIENT_SECRET') line="DISCORD_CLIENT_SECRET=$discord_client_secret" ;;
-            'DISCORD_BOT_TOKEN') line="DISCORD_BOT_TOKEN=$discord_bot_token" ;;
+            'DISCORD_BOT_TOKEN') line="DISCORD_BOT_TOKEN=\"$discord_bot_token\"" ;;
             'OWNER_IDS') line="OWNER_IDS=$owner_ids" ;;
             'DISCORD_REDIRECT_URI') line="DISCORD_REDIRECT_URI=$discord_redirect_uri" ;;
             'CAD_TIMEZONE') line="CAD_TIMEZONE=$cad_timezone" ;;
