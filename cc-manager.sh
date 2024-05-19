@@ -1,14 +1,13 @@
 #!/bin/bash
 
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run with sudo or as root."
-   exit 1
+    echo "This script must be run with sudo or as root."
+    exit 1
 fi
 
 CURRENT_VERSION="1.0.0"
 VERSION_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager-version.txt"
 SCRIPT_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager.sh"
-
 LOG_FILE="/var/log/community-cad-installer.log"
 
 function log() {
@@ -17,16 +16,17 @@ function log() {
 
 function check_for_updates() {
     log "Checking for updates..."
-    version_data=$(curl -s $VERSION_URL)
-    log "Fetched version data: $version_data"
-
-    ONLINE_VERSION=$(echo $version_data | tr -d '[:space:]')
+    ONLINE_VERSION=$(curl -s $VERSION_URL | tr -d '[:space:]')
     log "Online version: $ONLINE_VERSION"
     log "Current version: $CURRENT_VERSION"
 
-    if [ "$(printf '%s\n' "$ONLINE_VERSION" "$CURRENT_VERSION" | sort -V | head -n1)" != "$CURRENT_VERSION" ]; then
+    if [ "$ONLINE_VERSION" != "$CURRENT_VERSION" ]; then
         log "A new version ($ONLINE_VERSION) is available. Updating now..."
         curl -s $SCRIPT_URL -o "$0.tmp"
+        if [ $? -ne 0 ]; then
+            log "Failed to download the new script version."
+            exit 1
+        fi
         chmod +x "$0.tmp"
         mv "$0.tmp" "$0"
         log "Update complete. Restarting the script."
