@@ -9,6 +9,7 @@ VERSION_FILE="/var/log/cc-manager-version.txt"
 VERSION_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager-version.txt"
 SCRIPT_URL="https://raw.githubusercontent.com/CommunityCAD/docker-community-cad/main/cc-manager.sh"
 LOG_FILE="/var/log/community-cad-installer.log"
+RAW_LOG_FILE="/var/log/community-cad-raw.log"
 
 function log() {
     echo "$(date +"%Y-%m-%d %H:%M:%S") - $1" | tee -a "$LOG_FILE"
@@ -72,25 +73,6 @@ function command_exists() {
     type "$1" &> /dev/null
 }
 
-jokes=("Still thinking... Why do programmers prefer dark mode? Because light attracts bugs!"
-       "We are here, you are the next caller in line. Why do Java developers wear glasses? Because they don’t C#!"
-       "Processing... Why did the programmer quit his job? Because he didn't get arrays!"
-       "Hang tight! Why do Python programmers have low self-esteem? Because they’re constantly comparing their self to others."
-       "Almost there! Why did the database administrator leave his wife? She had one-to-many relationships."
-       "Just a moment... How many programmers does it take to change a light bulb? None, that's a hardware problem!")
-
-function provide_feedback() {
-    local msg=$1
-    local jokes_count=${#jokes[@]}
-    local joke_index=0
-
-    log "$msg"
-    while sleep 30; do
-        log "${jokes[$joke_index]}"
-        joke_index=$(( (joke_index + 1) % jokes_count ))
-    done
-}
-
 function install_package() {
     local package=$1
     local install_cmd=$2
@@ -101,19 +83,48 @@ function install_package() {
     else
         log "$package is not installed. Installing $package... (Please be patient. May take a bit depending on your system!)"
         provide_feedback "$msg" &
-        FEEDBACK_PID=$!
-        eval $install_cmd
-        kill $FEEDBACK_PID
-        wait $FEEDBACK_PID 2>/dev/null
+        eval $install_cmd >> "$RAW_LOG_FILE" 2>&1
+        wait
     fi
 }
 
+updates=("Still working... Please be patient!"
+         "Hang tight... We're almost there!"
+         "Just a moment... This can take some time."
+         "Working hard... Stay with us!"
+         "Progressing... We'll be done soon!")
+
+jokes=("Why do programmers prefer dark mode? Because light attracts bugs!"
+       "Why do Java developers wear glasses? Because they don’t C#!"
+       "Why did the programmer quit his job? Because he didn't get arrays!"
+       "Why do Python programmers have low self-esteem? Because they’re constantly comparing their self to others."
+       "Why did the database administrator leave his wife? She had one-to-many relationships."
+       "How many programmers does it take to change a light bulb? None, that's a hardware problem!")
+
+function provide_feedback() {
+    local msg=$1
+    local updates_count=${#updates[@]}
+    local jokes_count=${#jokes[@]}
+    local index=0
+
+    log "$msg"
+    while kill -0 $! 2> /dev/null; do
+        sleep 30
+        if (( index % 2 == 0 )); then
+            log "${updates[$((index % updates_count))]}"
+        else
+            log "${jokes[$((index % jokes_count))]}"
+        fi
+        index=$((index + 1))
+    done
+}
+
 function install_git() {
-    install_package git "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git >/dev/null 2>&1 || sudo yum install -y git >/dev/null 2>&1" "Installing git..."
+    install_package git "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git || sudo yum install -y git" "Installing git..."
 }
 
 function install_curl() {
-    install_package curl "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y curl >/dev/null 2>&1 || sudo yum install -y curl >/dev/null 2>&1" "Installing curl..."
+    install_package curl "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y curl || sudo yum install -y curl" "Installing curl..."
 }
 
 function install_docker() {
@@ -124,44 +135,44 @@ function install_docker() {
 
     log "Installing Docker... (Please be patient. May take a bit depending on your system!)"
     provide_feedback "Installing Docker..." &
-    FEEDBACK_PID=$!
     if [ -f /etc/os-release ]; then
         source /etc/os-release
         case $ID in
             ubuntu|debian)
-                sudo DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https ca-certificates curl software-properties-common >/dev/null 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add - >/dev/null 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive add-apt-repository "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${ID} $(lsb_release -cs) stable" >/dev/null 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io >/dev/null 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive apt-get update >> "$RAW_LOG_FILE" 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https ca-certificates curl software-properties-common >> "$RAW_LOG_FILE" 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add - >> "$RAW_LOG_FILE" 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive add-apt-repository "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/${ID} $(lsb_release -cs) stable" >> "$RAW_LOG_FILE" 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive apt-get update >> "$RAW_LOG_FILE" 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io >> "$RAW_LOG_FILE" 2>&1
                 ;;
             centos|rocky|rhel)
-                sudo yum install -y yum-utils device-mapper-persistent-data lvm2 >/dev/null 2>&1
-                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo >/dev/null 2>&1
-                sudo yum install -y docker-ce docker-ce-cli containerd.io >/dev/null 2>&1
-                sudo systemctl start docker >/dev/null 2>&1
-                sudo systemctl enable docker >/dev/null 2>&1
+                sudo yum install -y yum-utils device-mapper-persistent-data lvm2 >> "$RAW_LOG_FILE" 2>&1
+                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo >> "$RAW_LOG_FILE" 2>&1
+                sudo yum install -y docker-ce docker-ce-cli containerd.io >> "$RAW_LOG_FILE" 2>&1
+                sudo systemctl start docker >> "$RAW_LOG_FILE" 2>&1
+                sudo systemctl enable docker >> "$RAW_LOG_FILE" 2>&1
                 ;;
             fedora)
-                sudo dnf -y install dnf-plugins-core >/dev/null 2>&1
-                sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo >/dev/null 2>&1
-                sudo dnf install -y docker-ce docker-ce-cli containerd.io >/dev/null 2>&1
-                sudo systemctl start docker >/dev/null 2>&1
-                sudo systemctl enable docker >/dev/null 2>&1
+                sudo dnf -y install dnf-plugins-core >> "$RAW_LOG_FILE" 2>&1
+                sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo >> "$RAW_LOG_FILE" 2>&1
+                sudo dnf install -y docker-ce docker-ce-cli containerd.io >> "$RAW_LOG_FILE" 2>&1
+                sudo systemctl start docker >> "$RAW_LOG_FILE" 2>&1
+                sudo systemctl enable docker >> "$RAW_LOG_FILE" 2>&1
                 ;;
             arch|manjaro)
-                sudo pacman -Syu --noconfirm docker >/dev/null 2>&1
-                sudo systemctl start docker.service >/dev/null 2>&1
-                sudo systemctl enable docker.service >/dev/null 2>&1
+                sudo pacman -Syu --noconfirm docker >> "$RAW_LOG_FILE" 2>&1
+                sudo systemctl start docker.service >> "$RAW_LOG_FILE" 2>&1
+                sudo systemctl enable docker.service >> "$RAW_LOG_FILE" 2>&1
                 ;;
             *)
                 log "OS not supported for Docker installation. Please install Docker manually."
+                kill $FEEDBACK_PID
+                wait $FEEDBACK_PID 2>/dev/null
                 return 1
                 ;;
         esac
-        kill $FEEDBACK_PID
-        wait $FEEDBACK_PID 2>/dev/null
+        wait
         if command_exists docker; then
             log "Docker installed successfully."
         else
@@ -175,38 +186,38 @@ function install_docker() {
 }
 
 function install_docker_compose() {
-    install_package docker-compose "sudo curl -L \"https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)\" -o /usr/local/bin/docker-compose >/dev/null 2>&1 && sudo chmod +x /usr/local/bin/docker-compose >/dev/null 2>&1" "Installing Docker Compose..."
+    install_package docker-compose "sudo curl -L \"https://github.com/docker/compose/releases/download/1.29.2/docker-compose-\$(uname -s)-\$(uname -m)\" -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose" "Installing Docker Compose..."
 }
 
 function update_packages() {
     log "Updating system packages, please wait... (Please be patient. May take a bit depending on your system!)"
     provide_feedback "Updating system packages..." &
-    FEEDBACK_PID=$!
     if [ -f /etc/os-release ]; then
         source /etc/os-release
         case $ID in
             ubuntu|debian)
-                sudo DEBIAN_FRONTEND=noninteractive apt-get update -y >/dev/null 2>&1
-                sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y >/dev/null 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive apt-get update -y >> "$RAW_LOG_FILE" 2>&1
+                sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y >> "$RAW_LOG_FILE" 2>&1
                 ;;
             centos|rocky|rhel)
-                sudo yum update -y >/dev/null 2>&1
-                sudo yum upgrade -y >/dev/null 2>&1
+                sudo yum update -y >> "$RAW_LOG_FILE" 2>&1
+                sudo yum upgrade -y >> "$RAW_LOG_FILE" 2>&1
                 ;;
             fedora)
-                sudo dnf update -y >/dev/null 2>&1
-                sudo dnf upgrade -y >/dev/null 2>&1
+                sudo dnf update -y >> "$RAW_LOG_FILE" 2>&1
+                sudo dnf upgrade -y >> "$RAW_LOG_FILE" 2>&1
                 ;;
             arch|manjaro)
-                sudo pacman -Syu --noconfirm >/dev/null 2>&1
+                sudo pacman -Syu --noconfirm >> "$RAW_LOG_FILE" 2>&1
                 ;;
             *)
                 log "Operating system not supported for automatic package updates."
+                kill $FEEDBACK_PID
+                wait $FEEDBACK_PID 2>/dev/null
                 return 1
                 ;;
         esac
-        kill $FEEDBACK_PID
-        wait $FEEDBACK_PID 2>/dev/null
+        wait
         log "System packages have been updated."
     else
         log "Cannot determine the operating system."
@@ -215,7 +226,7 @@ function update_packages() {
 }
 
 function escape_for_sed() {
-    echo "$1" | sed -e 's/[\/&]/\\&/g'
+    echo "$1" | sed -e 's/[\/&:]/\\&/g'
 }
 
 function configure_environment() {
@@ -315,19 +326,17 @@ function install() {
     if [ ! -d "$CC_INSTALL_DIR/.git" ]; then
         log "Cloning the Community CAD repository..."
         provide_feedback "Cloning the Community CAD repository..." &
-        FEEDBACK_PID=$!
-        git clone https://github.com/CommunityCAD/docker-community-cad.git "$CC_INSTALL_DIR"
-        kill $FEEDBACK_PID
-        wait $FEEDBACK_PID 2>/dev/null
+        git clone https://github.com/CommunityCAD/docker-community-cad.git "$CC_INSTALL_DIR" >> "$RAW_LOG_FILE" 2>&1
+        wait
     else
         log "Repository already cloned. Updating repository..."
-        git pull
+        git pull >> "$RAW_LOG_FILE" 2>&1
     fi
 
-    if [ ! -f ".env" ]; then
-        log "No .env file found in the repository. Please check your installation."
-        return
-    fi
+   if [ ! -f ".env" ]; then
+       log "No .env file found in the repository. Please check your installation."
+       return
+   fi
 
     configure_environment
 
@@ -335,10 +344,8 @@ function install() {
 
     log "Setup is complete. Starting Docker containers..."
     provide_feedback "Starting Docker containers..." &
-    FEEDBACK_PID=$!
-    docker-compose up -d
-    kill $FEEDBACK_PID
-    wait $FEEDBACK_PID 2>/dev/null
+    docker-compose up -d >> "$RAW_LOG_FILE" 2>&1
+    wait
     log "Installation and setup are complete. Community CAD is now running."
 
     read -p "Would you like to install a reverse proxy with Caddy? [y/N] " choice
@@ -368,27 +375,25 @@ function install_caddy_reverse_proxy() {
             case $ID in
                 ubuntu|debian)
                     provide_feedback "Installing Caddy on Ubuntu/Debian..." &
-                    FEEDBACK_PID=$!
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >/dev/null 2>&1
-                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y caddy >/dev/null 2>&1
-                    kill $FEEDBACK_PID
-                    wait $FEEDBACK_PID 2>/dev/null
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get update >> "$RAW_LOG_FILE" 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl >> "$RAW_LOG_FILE" 2>&1
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >> "$RAW_LOG_FILE" 2>&1
+                    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >> "$RAW_LOG_FILE" 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get update >> "$RAW_LOG_FILE" 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y caddy >> "$RAW_LOG_FILE" 2>&1
+                    wait
                     ;;
                 centos|rocky)
                     provide_feedback "Installing Caddy on CentOS/Rocky..." &
-                    FEEDBACK_PID=$!
-                    sudo yum install -y 'dnf-command(copr)' >/dev/null 2>&1
-                    sudo dnf copr enable @caddy/caddy >/dev/null 2>&1
-                    sudo dnf install -y caddy >/dev/null 2>&1
-                    kill $FEEDBACK_PID
-                    wait $FEEDBACK_PID 2>/dev/null
+                    sudo yum install -y 'dnf-command(copr)' >> "$RAW_LOG_FILE" 2>&1
+                    sudo dnf copr enable @caddy/caddy >> "$RAW_LOG_FILE" 2>&1
+                    sudo dnf install -y caddy >> "$RAW_LOG_FILE" 2>&1
+                    wait
                     ;;
                 *)
                     log "OS not supported for Caddy installation."
+                    kill $FEEDBACK_PID
+                    wait $FEEDBACK_PID 2>/dev/null
                     return
                     ;;
             esac
@@ -418,7 +423,7 @@ function install_caddy_reverse_proxy() {
 
     sudo mkdir -p /etc/caddy
 
-    sudo tee /etc/caddy/Caddyfile >/dev/null <<EOF
+    sudo tee /etc/caddy/Caddyfile >> "$RAW_LOG_FILE" 2>&1 <<EOF
 $domain {
     reverse_proxy https://127.0.0.1:8000 {
         transport http {
@@ -442,8 +447,41 @@ $domain {
 EOF
     log "Caddy configuration for $domain has been added."
 
-    sudo systemctl reload caddy >/dev/null 2>&1
+    sudo systemctl reload caddy >> "$RAW_LOG_FILE" 2>&1
     log "Caddy has been reloaded to apply new configuration."
+}
+
+function remove_caddy_reverse_proxy() {
+    echo "Removing Caddy and its configuration..."
+    if command -v caddy &> /dev/null; then
+        log "Stopping Caddy..."
+        sudo systemctl stop caddy >> "$RAW_LOG_FILE" 2>&1
+
+        log "Removing Caddy package and configuration..."
+        if [ -f /etc/os-release ]; then
+            source /etc/os-release
+            case $ID in
+                ubuntu|debian)
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y caddy >> "$RAW_LOG_FILE" 2>&1
+                    sudo rm -rf /etc/caddy /var/log/caddy >> "$RAW_LOG_FILE" 2>&1
+                    ;;
+                centos|rocky)
+                    sudo dnf remove -y caddy >> "$RAW_LOG_FILE" 2>&1
+                    sudo rm -rf /etc/caddy /var/log/caddy >> "$RAW_LOG_FILE" 2>&1
+                    ;;
+                *)
+                    log "OS not supported for Caddy removal."
+                    return
+                    ;;
+            esac
+        else
+            log "Cannot determine the operating system."
+            return
+        fi
+        log "Caddy and its configuration have been removed."
+    else
+        log "Caddy is not installed."
+    fi
 }
 
 function install_nginx_reverse_proxy() {
@@ -467,20 +505,21 @@ function install_nginx_reverse_proxy() {
     else
         log "Nginx is not installed. Installing Nginx..."
         provide_feedback "Installing Nginx..." &
-        FEEDBACK_PID=$!
         if [ -f /etc/os-release ]; then
             . /etc/os-release
             OS=$ID
             case $OS in
                 ubuntu|debian)
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
-                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nginx >/dev/null 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get update >> "$RAW_LOG_FILE" 2>&1
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nginx >> "$RAW_LOG_FILE" 2>&1
                     ;;
                 centos|rocky)
-                    sudo yum install -y nginx >/dev/null 2>&1
+                    sudo yum install -y nginx >> "$RAW_LOG_FILE" 2>&1
                     ;;
                 *)
                     log "OS not supported."
+                    kill $FEEDBACK_PID
+                    wait $FEEDBACK_PID 2>/dev/null
                     return 1
                     ;;
             esac
@@ -488,19 +527,18 @@ function install_nginx_reverse_proxy() {
             log "Cannot determine the operating system."
             return 1
         fi
-        kill $FEEDBACK_PID
-        wait $FEEDBACK_PID 2>/dev/null
+        wait
         log "Nginx installed successfully."
     fi
 
     log "Installing Certbot..."
     case $OS in
         ubuntu|debian)
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y certbot python3-certbot-nginx >/dev/null 2>&1
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y certbot python3-certbot-nginx >> "$RAW_LOG_FILE" 2>&1
             ;;
         centos|rocky)
-            sudo yum install -y epel-release >/dev/null 2>&1
-            sudo yum install -y certbot python3-certbot-nginx >/dev/null 2>&1
+            sudo yum install -y epel-release >> "$RAW_LOG_FILE" 2>&1
+            sudo yum install -y certbot python3-certbot-nginx >> "$RAW_LOG_FILE" 2>&1
             ;;
         *)
             log "OS not supported for Certbot."
@@ -509,7 +547,7 @@ function install_nginx_reverse_proxy() {
     esac
 
     log "Configuring Nginx..."
-    sudo tee /etc/nginx/conf.d/$domain.conf >/dev/null <<EOF
+    sudo tee /etc/nginx/conf.d/$domain.conf >> "$RAW_LOG_FILE" 2>&1 <<EOF
 server {
     listen 80;
     server_name $domain;
@@ -553,16 +591,49 @@ server {
 EOF
     log "Nginx configuration has been set."
 
-    sudo certbot --nginx -d $domain --redirect --agree-tos --no-eff-email --keep-until-expiring --non-interactive >/dev/null 2>&1
+    sudo certbot --nginx -d $domain --redirect --agree-tos --no-eff-email --keep-until-expiring --non-interactive >> "$RAW_LOG_FILE" 2>&1
 
-    sudo systemctl reload nginx >/dev/null 2>&1
+    sudo systemctl reload nginx >> "$RAW_LOG_FILE" 2>&1
     log "Nginx has been reloaded. Your reverse proxy with SSL is now running."
 
     log "Setting up automatic renewal..."
-    sudo tee -a /etc/crontab >/dev/null <<EOF
+    sudo tee -a /etc/crontab >> "$RAW_LOG_FILE" 2>&1 <<EOF
 0 12 * * * root certbot renew --quiet --no-self-upgrade --post-hook 'systemctl reload nginx'
 EOF
     log "Certificate renewal setup is complete."
+}
+
+function remove_nginx_reverse_proxy() {
+    echo "Removing Nginx and its configuration..."
+    if command -v nginx &> /dev/null; then
+        log "Stopping Nginx..."
+        sudo systemctl stop nginx >> "$RAW_LOG_FILE" 2>&1
+
+        log "Removing Nginx package and configuration..."
+        if [ -f /etc/os-release ]; then
+            source /etc/os-release
+            case $ID in
+                ubuntu|debian)
+                    sudo DEBIAN_FRONTEND=noninteractive apt-get purge -y nginx nginx-common >> "$RAW_LOG_FILE" 2>&1
+                    sudo rm -rf /etc/nginx /var/log/nginx >> "$RAW_LOG_FILE" 2>&1
+                    ;;
+                centos|rocky)
+                    sudo yum remove -y nginx >> "$RAW_LOG_FILE" 2>&1
+                    sudo rm -rf /etc/nginx /var/log/nginx >> "$RAW_LOG_FILE" 2>&1
+                    ;;
+                *)
+                    log "OS not supported for Nginx removal."
+                    return
+                    ;;
+            esac
+        else
+            log "Cannot determine the operating system."
+            return
+        fi
+        log "Nginx and its configuration have been removed."
+    else
+        log "Nginx is not installed."
+    fi
 }
 
 function resetInstall() {
@@ -570,9 +641,11 @@ function resetInstall() {
     read -p "Are you sure you want to reset the installation? (y/N): " confirm
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         log "Resetting Installation..."
-        sudo docker-compose -f $DOCKER_COMPOSE_FILE down --volumes >/dev/null 2>&1
-        sudo docker-compose -f $DOCKER_COMPOSE_FILE rm -f >/dev/null 2>&1
+        sudo docker-compose -f $DOCKER_COMPOSE_FILE down --volumes >> "$RAW_LOG_FILE" 2>&1
+        sudo docker-compose -f $DOCKER_COMPOSE_FILE rm -f >> "$RAW_LOG_FILE" 2>&1
         sudo rm -rf $CC_INSTALL_DIR
+        remove_caddy_reverse_proxy
+        remove_nginx_reverse_proxy
         log "Installation has been reset. Please reinstall to use Community CAD."
     else
         log "Reset canceled."
@@ -602,10 +675,8 @@ function upgrade() {
     stopServices
     log "Pulling latest versions of images..."
     provide_feedback "Pulling latest versions of images..." &
-    FEEDBACK_PID=$!
-    sudo docker-compose -f $DOCKER_COMPOSE_FILE pull
-    kill $FEEDBACK_PID
-    wait $FEEDBACK_PID 2>/dev/null
+    sudo docker-compose -f $DOCKER_COMPOSE_FILE pull >> "$RAW_LOG_FILE" 2>&1
+    wait
     startServices
     log "Upgrade completed."
 }
@@ -655,16 +726,48 @@ function otherOptions() {
 function reverseProxyMenu() {
     print_header
     echo "Reverse Proxy Options:"
-    echo "   1) Install Caddy Reverse Proxy"
-    echo "   2) Install Nginx Reverse Proxy"
+    echo "   1) Install Reverse Proxies"
+    echo "   2) Remove Reverse Proxies"
     echo "   3) Return to Other Options"
     echo
     read -p "Select an option: " proxyOption
     case $proxyOption in
-        1) install_caddy_reverse_proxy ;;
-        2) install_nginx_reverse_proxy ;;
+        1) installReverseProxiesMenu ;;
+        2) removeReverseProxiesMenu ;;
         3) otherOptions ;;
         *) echo "Invalid option, please try again."; reverseProxyMenu ;;
+    esac
+}
+
+function installReverseProxiesMenu() {
+    print_header
+    echo "Install Reverse Proxy Options:"
+    echo "   1) Install Caddy Reverse Proxy"
+    echo "   2) Install Nginx Reverse Proxy"
+    echo "   3) Return to Reverse Proxy Options"
+    echo
+    read -p "Select an option: " installProxyOption
+    case $installProxyOption in
+        1) install_caddy_reverse_proxy ;;
+        2) install_nginx_reverse_proxy ;;
+        3) reverseProxyMenu ;;
+        *) echo "Invalid option, please try again."; installReverseProxiesMenu ;;
+    esac
+}
+
+function removeReverseProxiesMenu() {
+    print_header
+    echo "Remove Reverse Proxy Options:"
+    echo "   1) Remove Caddy Reverse Proxy"
+    echo "   2) Remove Nginx Reverse Proxy"
+    echo "   3) Return to Reverse Proxy Options"
+    echo
+    read -p "Select an option: " removeProxyOption
+    case $removeProxyOption in
+        1) remove_caddy_reverse_proxy ;;
+        2) remove_nginx_reverse_proxy ;;
+        3) reverseProxyMenu ;;
+        *) echo "Invalid option, please try again."; removeReverseProxiesMenu ;;
     esac
 }
 
