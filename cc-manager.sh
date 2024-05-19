@@ -17,14 +17,11 @@ function log() {
 
 function check_for_updates() {
     log "Checking for updates..."
-    readarray -t version_data < <(curl -s $VERSION_URL)
-
-    ONLINE_VERSION=${version_data[0]}
-    UPDATED_SCRIPT_URL=${version_data[1]}
+    ONLINE_VERSION=$(curl -s $VERSION_URL)
 
     if [ "$(printf '%s\n' "$ONLINE_VERSION" "$CURRENT_VERSION" | sort -V | head -n1)" != "$CURRENT_VERSION" ]; then
         log "A new version ($ONLINE_VERSION) is available. Updating now..."
-        curl -s $UPDATED_SCRIPT_URL -o "$0.tmp"
+        curl -s $SCRIPT_URL -o "$0.tmp"
         chmod +x "$0.tmp"
         mv "$0.tmp" "$0"
         log "Update complete. Restarting the script."
@@ -296,6 +293,11 @@ function install() {
     else
         log "Repository already cloned. Updating repository..."
         git pull
+    fi
+
+    if [ ! -f ".env.example" ]; then
+        log "No .env.example file found in the repository. Please check your installation."
+        return
     fi
 
     if [ ! -f ".env" ]; then
