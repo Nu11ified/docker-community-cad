@@ -17,7 +17,12 @@ function log() {
 
 function check_for_updates() {
     log "Checking for updates..."
-    ONLINE_VERSION=$(curl -s $VERSION_URL)
+    version_data=$(curl -s $VERSION_URL)
+    log "Fetched version data: $version_data"
+
+    ONLINE_VERSION=$(echo $version_data | tr -d '[:space:]')
+    log "Online version: $ONLINE_VERSION"
+    log "Current version: $CURRENT_VERSION"
 
     if [ "$(printf '%s\n' "$ONLINE_VERSION" "$CURRENT_VERSION" | sort -V | head -n1)" != "$CURRENT_VERSION" ]; then
         log "A new version ($ONLINE_VERSION) is available. Updating now..."
