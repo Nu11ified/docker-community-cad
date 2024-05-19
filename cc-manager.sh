@@ -72,21 +72,6 @@ function command_exists() {
     type "$1" &> /dev/null
 }
 
-function install_package() {
-    local package=$1
-    local install_cmd=$2
-    local msg=$3
-
-    if command_exists $package; then
-        log "$package is already installed."
-    else
-        log "$package is not installed. Installing $package... (Please be patient. May take a bit depending on your system!)"
-        provide_feedback "$msg" &
-        eval $install_cmd
-        wait
-    fi
-}
-
 jokes=("Still thinking... Why do programmers prefer dark mode? Because light attracts bugs!"
        "We are here, you are the next caller in line. Why do Java developers wear glasses? Because they don’t C#!"
        "Processing... Why did the programmer quit his job? Because he didn't get arrays!"
@@ -100,11 +85,27 @@ function provide_feedback() {
     local joke_index=0
 
     log "$msg"
-    while kill -0 $! 2> /dev/null; do
-        sleep 30
+    while sleep 30; do
         log "${jokes[$joke_index]}"
         joke_index=$(( (joke_index + 1) % jokes_count ))
     done
+}
+
+function install_package() {
+    local package=$1
+    local install_cmd=$2
+    local msg=$3
+
+    if command_exists $package; then
+        log "$package is already installed."
+    else
+        log "$package is not installed. Installing $package... (Please be patient. May take a bit depending on your system!)"
+        provide_feedback "$msg" &
+        FEEDBACK_PID=$!
+        eval $install_cmd
+        kill $FEEDBACK_PID
+        wait $FEEDBACK_PID 2>/dev/null
+    fi
 }
 
 function install_git() {
@@ -123,6 +124,7 @@ function install_docker() {
 
     log "Installing Docker... (Please be patient. May take a bit depending on your system!)"
     provide_feedback "Installing Docker..." &
+    FEEDBACK_PID=$!
     if [ -f /etc/os-release ]; then
         source /etc/os-release
         case $ID in
@@ -158,7 +160,8 @@ function install_docker() {
                 return 1
                 ;;
         esac
-        wait
+        kill $FEEDBACK_PID
+        wait $FEEDBACK_PID 2>/dev/null
         if command_exists docker; then
             log "Docker installed successfully."
         else
@@ -178,6 +181,7 @@ function install_docker_compose() {
 function update_packages() {
     log "Updating system packages, please wait... (Please be patient. May take a bit depending on your system!)"
     provide_feedback "Updating system packages..." &
+    FEEDBACK_PID=$!
     if [ -f /etc/os-release ]; then
         source /etc/os-release
         case $ID in
@@ -201,7 +205,8 @@ function update_packages() {
                 return 1
                 ;;
         esac
-        wait
+        kill $FEEDBACK_PID
+        wait $FEEDBACK_PID 2>/dev/null
         log "System packages have been updated."
     else
         log "Cannot determine the operating system."
@@ -210,7 +215,7 @@ function update_packages() {
 }
 
 function escape_for_sed() {
-    echo "$1" | sed -e 's/[\/&:]/\\&/g'
+    echo "$1" | sed -e 's/[\/&]/\\&/g'
 }
 
 function configure_environment() {
@@ -310,17 +315,19 @@ function install() {
     if [ ! -d "$CC_INSTALL_DIR/.git" ]; then
         log "Cloning the Community CAD repository..."
         provide_feedback "Cloning the Community CAD repository..." &
+        FEEDBACK_PID=$!
         git clone https://github.com/CommunityCAD/docker-community-cad.git "$CC_INSTALL_DIR"
-        wait
+        kill $FEEDBACK_PID
+        wait $FEEDBACK_PID 2>/dev/null
     else
         log "Repository already cloned. Updating repository..."
         git pull
     fi
 
-   if [ ! -f ".env" ]; then
-       log "No .env file found in the repository. Please check your installation."
-       return
-   fi
+    if [ ! -f ".env" ]; then
+        log "No .env file found in the repository. Please check your installation."
+        return
+    fi
 
     configure_environment
 
@@ -328,8 +335,10 @@ function install() {
 
     log "Setup is complete. Starting Docker containers..."
     provide_feedback "Starting Docker containers..." &
+    FEEDBACK_PID=$!
     docker-compose up -d
-    wait
+    kill $FEEDBACK_PID
+    wait $FEEDBACK_PID 2>/dev/null
     log "Installation and setup are complete. Community CAD is now running."
 
     read -p "Would you like to install a reverse proxy with Caddy? [y/N] " choice
@@ -359,20 +368,24 @@ function install_caddy_reverse_proxy() {
             case $ID in
                 ubuntu|debian)
                     provide_feedback "Installing Caddy on Ubuntu/Debian..." &
+                    FEEDBACK_PID=$!
                     sudo DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
                     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
                     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg >/dev/null 2>&1
                     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1
                     sudo DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
                     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y caddy >/dev/null 2>&1
-                    wait
+                    kill $FEEDBACK_PID
+                    wait $FEEDBACK_PID 2>/dev/null
                     ;;
                 centos|rocky)
                     provide_feedback "Installing Caddy on CentOS/Rocky..." &
+                    FEEDBACK_PID=$!
                     sudo yum install -y 'dnf-command(copr)' >/dev/null 2>&1
                     sudo dnf copr enable @caddy/caddy >/dev/null 2>&1
                     sudo dnf install -y caddy >/dev/null 2>&1
-                    wait
+                    kill $FEEDBACK_PID
+                    wait $FEEDBACK_PID 2>/dev/null
                     ;;
                 *)
                     log "OS not supported for Caddy installation."
@@ -454,6 +467,7 @@ function install_nginx_reverse_proxy() {
     else
         log "Nginx is not installed. Installing Nginx..."
         provide_feedback "Installing Nginx..." &
+        FEEDBACK_PID=$!
         if [ -f /etc/os-release ]; then
             . /etc/os-release
             OS=$ID
@@ -474,7 +488,8 @@ function install_nginx_reverse_proxy() {
             log "Cannot determine the operating system."
             return 1
         fi
-        wait
+        kill $FEEDBACK_PID
+        wait $FEEDBACK_PID 2>/dev/null
         log "Nginx installed successfully."
     fi
 
@@ -587,8 +602,10 @@ function upgrade() {
     stopServices
     log "Pulling latest versions of images..."
     provide_feedback "Pulling latest versions of images..." &
+    FEEDBACK_PID=$!
     sudo docker-compose -f $DOCKER_COMPOSE_FILE pull
-    wait
+    kill $FEEDBACK_PID
+    wait $FEEDBACK_PID 2>/dev/null
     startServices
     log "Upgrade completed."
 }
