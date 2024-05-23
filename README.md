@@ -13,7 +13,7 @@ Here are some direct links as well!
 # Community CAD Info
 
 - **Website:** [communitycad.app](https://communitycad.app)
-- **Documentation:** [communitycad.app/docs](https://communitycad.app/docks)
+- **Documentation:** [communitycad.app/docs](https://communitycad.app/docs)
 - **Suggestions/Bugs:** [GitHub - Issues](https://github.com/CommunityCAD/CommunityCAD/issues/new/choose)
 - **Discord Link:** [communitycad.app/discord](https://communitycad.app/discord)
 
