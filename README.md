@@ -5,7 +5,7 @@ Welcome to Community CAD Docker!
 Feel free to Check out our wiki [here](https://github.com/CommunityCAD/docker-community-cad/wiki)!
 
 Here are some direct links as well!
-- [WIP Linux Install Script](https://github.com/CommunityCAD/docker-community-cad/wiki/%5BWIP%5D-Install-Script)
+- [WIP Community CAD Manager](https://github.com/CommunityCAD/docker-community-cad/wiki/%5BWIP%5D-CommunityCAD-Manager)
 - [Manual Install Guide](https://github.com/CommunityCAD/docker-community-cad/wiki/Manual-Install-Guide)
 - [Reverse Proxies](https://github.com/CommunityCAD/docker-community-cad/wiki/Reverse-Proxies)
 - [Update Guide](https://github.com/CommunityCAD/docker-community-cad/wiki/Update-Guide)
